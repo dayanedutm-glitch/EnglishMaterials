@@ -1,0 +1,3223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Grammar Canvas — Two Tenses Side-by-Side</title>
+  <style>
+    :root {
+      --font-scale: 1.25;
+      --bg: #070b14;
+      --grid-line: rgba(148, 163, 184, 0.055);
+      --grid-dot: rgba(56, 189, 248, 0.14);
+      --card-bg: rgba(15, 23, 42, 0.95);
+      --card-inner: #090e1a;
+      --border: #1e293b;
+      --border-hi: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --cyan: #38bdf8;
+      --cyan-dim: rgba(56, 189, 248, 0.15);
+      --amber: #f59e0b;
+      --amber-bright: #fbbf24;
+      --amber-dim: rgba(245, 158, 11, 0.18);
+      --green: #22c55e;
+      --green-bright: #4ade80;
+      --green-dim: rgba(34, 197, 94, 0.18);
+      --red: #ef4444;
+      --red-bright: #f87171;
+      --red-dim: rgba(239, 68, 68, 0.18);
+      --purple: #a855f7;
+      --purple-bright: #c084fc;
+      --purple-dim: rgba(168, 85, 247, 0.18);
+      --teal: #14b8a6;
+      --teal-bright: #2dd4bf;
+      --teal-dim: rgba(20, 184, 166, 0.18);
+      --indigo: #6366f1;
+      --indigo-bright: #818cf8;
+      --indigo-dim: rgba(99, 102, 241, 0.18);
+      --orange: #f97316;
+      --orange-bright: #fb923c;
+      --orange-dim: rgba(249, 115, 22, 0.18);
+    }
+
+    body.light-mode {
+      --bg: #f1f5f9;
+      --grid-line: rgba(15, 23, 42, 0.06);
+      --grid-dot: rgba(2, 132, 199, 0.18);
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --card-inner: #f8fafc;
+      --border: #cbd5e1;
+      --border-hi: #94a3b8;
+      --text: #0f172a;
+      --muted: #64748b;
+      --cyan: #0284c7;
+      --cyan-dim: rgba(2, 132, 199, 0.12);
+      --amber: #d97706;
+      --amber-bright: #b45309;
+      --amber-dim: rgba(217, 119, 6, 0.14);
+      --green: #16a34a;
+      --green-bright: #15803d;
+      --green-dim: rgba(22, 163, 74, 0.14);
+      --red: #dc2626;
+      --red-bright: #b91c1c;
+      --red-dim: rgba(220, 38, 38, 0.14);
+      --purple: #9333ea;
+      --purple-bright: #7e22ce;
+      --purple-dim: rgba(147, 51, 234, 0.14);
+      --teal: #0d9488;
+      --teal-bright: #0f766e;
+      --teal-dim: rgba(13, 148, 136, 0.14);
+      --indigo: #4f46e5;
+      --indigo-bright: #4338ca;
+      --indigo-dim: rgba(79, 70, 229, 0.14);
+      --orange: #ea580c;
+      --orange-bright: #c2410c;
+      --orange-dim: rgba(234, 88, 12, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ================= FLOATING DRAGGABLE / TOGGLABLE CONTROL BAR ================= */
+    .hud-bar {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid var(--border-hi);
+      border-radius: 14px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+      max-width: 98vw;
+      transition: box-shadow 0.2s, border-color 0.2s, opacity 0.2s;
+      user-select: none;
+    }
+
+    .hud-bar.dragging {
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+      border-color: var(--cyan);
+      opacity: 0.96;
+      cursor: grabbing !important;
+    }
+
+    /* Collapsed Mini Pill State */
+    .hud-bar.collapsed {
+      padding: 0;
+      border-radius: 9999px;
+      background: var(--card-bg);
+      border-color: var(--cyan);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .hud-bar.collapsed .hud-expanded-content {
+      display: none !important;
+    }
+
+    .hud-bar:not(.collapsed) .hud-mini-pill {
+      display: none !important;
+    }
+
+    .hud-mini-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--text);
+      border-radius: 9999px;
+      transition: all 0.18s ease;
+      touch-action: none;
+    }
+
+    .hud-mini-pill:hover {
+      background: var(--cyan-dim);
+      color: var(--cyan);
+    }
+
+    .hud-mini-grip {
+      color: var(--cyan);
+      font-size: 15px;
+      letter-spacing: -1px;
+      cursor: grab;
+    }
+
+    .hud-mini-title {
+      font-weight: 900;
+      letter-spacing: 0.3px;
+    }
+
+    .hud-mini-badge {
+      font-size: 11px;
+      font-weight: 800;
+      background: var(--cyan-dim);
+      color: var(--cyan);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .hud-kbd-hint {
+      font-size: 10px;
+      font-weight: 900;
+      background: var(--card-inner);
+      border: 1px solid var(--border-hi);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .hud-mini-arrow {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Expanded Content */
+    .hud-expanded-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hud-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: rgba(0, 0, 0, 0.28);
+      border-bottom: 1px solid var(--border);
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      touch-action: none;
+    }
+
+    body.light-mode .hud-header-bar {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .hud-drag-grip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: grab;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      font-size: 10.5px;
+      font-weight: 900;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      transition: all 0.15s ease;
+      touch-action: none;
+    }
+
+    .hud-drag-grip:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .grip-dots {
+      font-size: 13px;
+      letter-spacing: -1px;
+      color: var(--cyan);
+    }
+
+    .hud-header-hint {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--muted);
+      opacity: 0.8;
+    }
+
+    .hud-header-spacer {
+      flex: 1;
+    }
+
+    .hud-body-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      flex-wrap: wrap;
+    }
+
+    .hud-tense-controls-dual,
+    .hud-tense-controls-single {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .hud-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--border-hi);
+      margin: 0 3px;
+    }
+
+    .icon-btn {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      color: var(--text);
+      height: 34px;
+      min-width: 34px;
+      padding: 0 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 12.5px;
+      font-weight: 800;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      transform: translateY(-1px);
+    }
+
+    .icon-btn.active {
+      background: var(--cyan-dim);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .icon-btn.hud-sm-btn {
+      height: 26px;
+      min-width: 26px;
+      padding: 0 7px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    .icon-btn.mode-btn {
+      height: 26px;
+      padding: 0 9px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+
+    .icon-btn.font-btn {
+      border-color: rgba(245, 158, 11, 0.45);
+      color: var(--amber-bright);
+      font-weight: 900;
+    }
+
+    .icon-btn.font-btn:hover {
+      background: var(--amber-dim);
+      border-color: var(--amber-bright);
+    }
+
+    .icon-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    .icon-btn.hud-sm-btn svg,
+    .icon-btn.mode-btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .hud-select {
+      background: var(--card-inner);
+      border: 1.5px solid var(--border-hi);
+      color: var(--text);
+      height: 34px;
+      padding: 0 8px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .hud-select:focus, .hud-select:hover {
+      border-color: var(--cyan);
+    }
+
+    .hud-label {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .zoom-readout, .font-readout {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      font-weight: 900;
+      min-width: 44px;
+      text-align: center;
+    }
+
+    .zoom-readout { color: var(--cyan); }
+    .font-readout { color: var(--amber-bright); }
+
+    /* ================= INFINITE CANVAS VIEWPORT ================= */
+    #canvas-viewport {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+      background-image:
+        radial-gradient(circle, var(--grid-dot) 1px, transparent 1px),
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      background-size: 32px 32px, 32px 32px, 32px 32px;
+    }
+
+    #canvas-viewport.panning {
+      cursor: grabbing;
+    }
+
+    #canvas-world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4800px;
+      height: 3200px;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    /* ================= SVG WIRES LAYER ================= */
+    svg.wires-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      overflow: visible;
+    }
+
+    .conn-wire {
+      fill: none;
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      opacity: 0.45;
+      transition: opacity 0.25s, stroke-width 0.25s, filter 0.25s;
+    }
+
+    .conn-wire.wire-active {
+      opacity: 1;
+      stroke-width: 5.5;
+      stroke-dasharray: 12 7;
+      animation: wireFlow 0.8s linear infinite;
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+
+    @keyframes wireFlow {
+      to {
+        stroke-dashoffset: -19;
+      }
+    }
+
+    .wire-pos { stroke: var(--green-bright); color: var(--green-bright); }
+    .wire-neg { stroke: var(--red-bright); color: var(--red-bright); }
+    .wire-qyn { stroke: var(--amber-bright); color: var(--amber-bright); }
+    .wire-qwh { stroke: var(--purple-bright); color: var(--purple-bright); }
+    .wire-bridge { stroke: var(--cyan); color: var(--cyan); stroke-dasharray: 7 7; opacity: 0.35; }
+
+    /* ================= CANVAS NODES ================= */
+    .canvas-node {
+      position: absolute;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1.5px solid var(--border-hi);
+      border-radius: 20px;
+      padding: 16px 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+      z-index: 10;
+      cursor: move;
+      touch-action: none;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    body.light-mode .canvas-node {
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    }
+
+    .canvas-node.dragging {
+      z-index: 999 !important;
+      cursor: grabbing;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Node Themes */
+    .node-tobe-theme {
+      border-color: rgba(56, 189, 248, 0.6);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(56, 189, 248, 0.08);
+    }
+
+    .node-action-theme {
+      border-color: rgba(245, 158, 11, 0.6);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(245, 158, 11, 0.08);
+    }
+
+    .node-pcont-theme {
+      border-color: rgba(20, 184, 166, 0.65);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(20, 184, 166, 0.08);
+    }
+
+    .node-pastcont-theme {
+      border-color: rgba(99, 102, 241, 0.65);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(99, 102, 241, 0.08);
+    }
+
+    /* Node Top Bar */
+    .node-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .node-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: 10px;
+      font-size: calc(14px * var(--font-scale));
+      font-weight: 900;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-tobe { background: var(--cyan-dim); color: var(--cyan); border: 1px solid rgba(56, 189, 248, 0.45); }
+    .badge-action { background: var(--amber-dim); color: var(--amber-bright); border: 1px solid rgba(245, 158, 11, 0.45); }
+    .badge-past { background: var(--orange-dim); color: var(--orange-bright); border: 1px solid rgba(249, 115, 22, 0.5); }
+    .badge-pcont { background: var(--teal-dim); color: var(--teal-bright); border: 1px solid rgba(20, 184, 166, 0.5); }
+    .badge-pastcont { background: var(--indigo-dim); color: var(--indigo-bright); border: 1px solid rgba(99, 102, 241, 0.5); }
+
+    .node-badge svg {
+      width: calc(17px * var(--font-scale));
+      height: calc(17px * var(--font-scale));
+    }
+
+    .table-toggle-btn {
+      font-size: calc(12px * var(--font-scale));
+      height: calc(28px * var(--font-scale));
+      padding: 0 9px;
+      gap: 5px;
+      border-radius: 8px;
+      font-weight: 800;
+    }
+
+    .table-toggle-btn.active {
+      background: var(--cyan-dim);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .table-toggle-btn:not(.active) {
+      opacity: 0.65;
+      border-style: dashed;
+      color: var(--muted);
+    }
+
+    /* ================= STRUCTURE FORMULA CARDS (PURE TEXT, NO SVGS INSIDE) ================= */
+    .structure-node {
+      width: 740px;
+    }
+
+    .formula-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .formula-row {
+      background: var(--card-inner);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 11px 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+    }
+
+    .formula-row:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-hi);
+    }
+
+    .formula-row.frow-pos { border-left: 6px solid var(--green-bright); }
+    .formula-row.frow-neg { border-left: 6px solid var(--red-bright); }
+    .formula-row.frow-qyn { border-left: 6px solid var(--amber-bright); }
+    .formula-row.frow-qwh { border-left: 6px solid var(--purple-bright); }
+
+    .formula-row.active-cat.frow-pos {
+      background: rgba(34, 197, 94, 0.13);
+      border-color: var(--green-bright);
+      box-shadow: 0 0 22px rgba(34, 197, 94, 0.25);
+    }
+    .formula-row.active-cat.frow-neg {
+      background: rgba(239, 68, 68, 0.13);
+      border-color: var(--red-bright);
+      box-shadow: 0 0 22px rgba(239, 68, 68, 0.25);
+    }
+    .formula-row.active-cat.frow-qyn {
+      background: rgba(245, 158, 11, 0.13);
+      border-color: var(--amber-bright);
+      box-shadow: 0 0 22px rgba(245, 158, 11, 0.25);
+    }
+    .formula-row.active-cat.frow-qwh {
+      background: rgba(168, 85, 247, 0.13);
+      border-color: var(--purple-bright);
+      box-shadow: 0 0 22px rgba(168, 85, 247, 0.25);
+    }
+
+    /* Type Marker Pill (+), (-), (?y/n), (w/h) — pure text */
+    .type-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 11px;
+      border-radius: 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: calc(14.5px * var(--font-scale));
+      font-weight: 900;
+      min-width: calc(70px * var(--font-scale));
+      flex-shrink: 0;
+    }
+
+    .tp-pos { background: var(--green-dim); color: var(--green-bright); border: 1.5px solid rgba(34, 197, 94, 0.5); }
+    .tp-neg { background: var(--red-dim); color: var(--red-bright); border: 1.5px solid rgba(239, 68, 68, 0.5); }
+    .tp-qyn { background: var(--amber-dim); color: var(--amber-bright); border: 1.5px solid rgba(245, 158, 11, 0.5); }
+    .tp-qwh { background: var(--purple-dim); color: var(--purple-bright); border: 1.5px solid rgba(168, 85, 247, 0.5); }
+
+    /* Formula Equation Tokens — pure text */
+    .equation-track {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 7px;
+      flex: 1;
+      justify-content: flex-start;
+    }
+
+    .eq-plus {
+      color: var(--muted);
+      font-family: ui-monospace, monospace;
+      font-size: calc(17px * var(--font-scale));
+      font-weight: 900;
+    }
+
+    .eq-qmark {
+      font-family: ui-monospace, monospace;
+      font-size: calc(20px * var(--font-scale));
+      font-weight: 900;
+      color: var(--amber-bright);
+      margin-left: 2px;
+    }
+
+    .eq-tok {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 5px 11px;
+      border-radius: 9px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: calc(16.5px * var(--font-scale));
+      font-weight: 900;
+      border: 1.5px solid transparent;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tok-s { background: rgba(56, 189, 248, 0.14); color: var(--cyan); border-color: rgba(56, 189, 248, 0.45); }
+    .tok-v { background: rgba(34, 197, 94, 0.14); color: var(--green-bright); border-color: rgba(34, 197, 94, 0.45); }
+    .tok-ving { background: rgba(20, 184, 166, 0.18); color: var(--teal-bright); border-color: rgba(20, 184, 166, 0.5); }
+    .tok-aux { background: rgba(245, 158, 11, 0.16); color: var(--amber-bright); border-color: rgba(245, 158, 11, 0.5); }
+    .tok-be { background: rgba(56, 189, 248, 0.16); color: var(--cyan); border-color: rgba(56, 189, 248, 0.5); }
+    .tok-waswere { background: rgba(99, 102, 241, 0.16); color: var(--indigo-bright); border-color: rgba(99, 102, 241, 0.5); }
+    .tok-v2 { background: rgba(249, 115, 22, 0.16); color: var(--orange-bright); border-color: rgba(249, 115, 22, 0.5); }
+    .tok-did { background: rgba(245, 158, 11, 0.18); color: #fde047; border-color: rgba(245, 158, 11, 0.55); }
+    .tok-not { background: rgba(239, 68, 68, 0.16); color: var(--red-bright); border-color: rgba(239, 68, 68, 0.5); }
+    .tok-o { background: rgba(148, 163, 184, 0.14); color: var(--text); border-color: rgba(148, 163, 184, 0.4); }
+    .tok-wh { background: rgba(168, 85, 247, 0.16); color: var(--purple-bright); border-color: rgba(168, 85, 247, 0.5); }
+
+    .sub-choice {
+      padding: 2px 6px;
+      border-radius: 5px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .sub-choice.sub-active {
+      background: var(--green);
+      color: #04130a !important;
+      box-shadow: 0 0 11px var(--green-bright);
+      transform: scale(1.06);
+    }
+
+    .sub-choice.sub-dim {
+      opacity: 0.35;
+    }
+
+    .sub-slash {
+      opacity: 0.45;
+      margin: 0 2px;
+    }
+
+    /* ================= CONCORDANCE TABLE NODES (SIDE BY SIDE) ================= */
+    .table-node {
+      width: 740px;
+    }
+
+    .verb-pills {
+      display: inline-flex;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .v-pill {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-size: calc(12px * var(--font-scale));
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .v-pill svg {
+      width: calc(14px * var(--font-scale));
+      height: calc(14px * var(--font-scale));
+    }
+
+    .v-pill:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .v-pill.active-amber { background: var(--amber); color: #090d16; box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35); }
+    .v-pill.active-cyan { background: var(--cyan); color: #090d16; box-shadow: 0 2px 10px rgba(56, 189, 248, 0.35); }
+    .v-pill.active-teal { background: var(--teal); color: #051613; box-shadow: 0 2px 10px rgba(20, 184, 166, 0.35); }
+    .v-pill.active-indigo { background: var(--indigo-bright); color: #0b0c1e; box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35); }
+    .v-pill.active-orange { background: var(--orange-bright); color: #180902; box-shadow: 0 2px 10px rgba(249, 115, 22, 0.35); }
+
+    /* Matrix Table */
+    .matrix-wrap {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--card-inner);
+    }
+
+    .concord-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: center;
+    }
+
+    .concord-table th {
+      background: rgba(15, 23, 42, 0.9);
+      padding: 10px 7px;
+      border-bottom: 2px solid var(--border);
+      cursor: pointer;
+      transition: background 0.18s;
+      position: relative;
+    }
+
+    body.light-mode .concord-table th {
+      background: #e2e8f0;
+    }
+
+    .concord-table th:hover {
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .concord-table th.col-hi {
+      background: rgba(56, 189, 248, 0.16);
+      box-shadow: inset 0 -3px 0 var(--cyan);
+    }
+
+    .th-head-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .th-top-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: calc(13px * var(--font-scale));
+      font-weight: 900;
+    }
+
+    .th-top-tag svg {
+      width: calc(14px * var(--font-scale));
+      height: calc(14px * var(--font-scale));
+    }
+
+    .th-sub-formula {
+      font-family: ui-monospace, monospace;
+      font-size: calc(10.5px * var(--font-scale));
+      color: var(--muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .th-subj-header {
+      text-align: left !important;
+      padding-left: 11px !important;
+      border-right: 1px solid var(--border);
+      width: 172px;
+    }
+
+    .concord-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+      vertical-align: middle;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .concord-table td.col-hi {
+      background: rgba(56, 189, 248, 0.06);
+    }
+
+    /* Subject Cell with SVG Avatar */
+    .td-subj {
+      text-align: left !important;
+      padding: 7px 10px !important;
+      border-right: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    body.light-mode .td-subj {
+      background: #f1f5f9;
+    }
+
+    .subj-flex {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pro-avatar {
+      width: calc(30px * var(--font-scale));
+      height: calc(30px * var(--font-scale));
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--cyan);
+    }
+
+    .pro-avatar svg {
+      width: calc(19px * var(--font-scale));
+      height: calc(19px * var(--font-scale));
+    }
+
+    .row-3sg {
+      background: rgba(245, 158, 11, 0.045);
+    }
+
+    .row-3sg .td-subj {
+      border-left: 4px solid var(--amber);
+    }
+
+    .row-3sg .pro-avatar {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: var(--amber-bright);
+    }
+
+    .row-1sg-3sg {
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .row-1sg-3sg .td-subj {
+      border-left: 4px solid var(--indigo-bright);
+    }
+
+    .pro-text-wrap {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .pro-en {
+      font-size: calc(14px * var(--font-scale));
+      font-weight: 900;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .row-3sg .pro-en {
+      color: var(--amber-bright);
+    }
+
+    .pro-nat {
+      font-size: calc(10.5px * var(--font-scale));
+      color: var(--muted);
+      font-style: italic;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    body.hide-native .pro-nat {
+      display: none;
+    }
+
+    /* Active Selected Subject Row (Green Glow) */
+    .concord-table tr.active-pro-row {
+      background: rgba(34, 197, 94, 0.16) !important;
+      outline: 2px solid var(--green) !important;
+      outline-offset: -2px;
+    }
+
+    .concord-table tr.active-pro-row .td-subj {
+      border-left: 5px solid var(--green) !important;
+      background: rgba(22, 163, 74, 0.22) !important;
+    }
+
+    .concord-table tr.active-pro-row .pro-en {
+      color: var(--green-bright) !important;
+    }
+
+    .concord-table tr.active-pro-row .pro-avatar {
+      background: rgba(34, 197, 94, 0.25);
+      border-color: var(--green-bright);
+      color: var(--green-bright);
+    }
+
+    /* Table Cell Badges */
+    .c-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: calc(13.5px * var(--font-scale));
+      font-weight: 900;
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+    }
+
+    /* Action Verb Badges */
+    .cb-v { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.45); }
+    .cb-vs { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.6); }
+    .cb-dont { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .cb-doesnt { background: rgba(245, 158, 11, 0.22); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.6); }
+    .cb-do { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+    .cb-does { background: rgba(245, 158, 11, 0.22); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.6); }
+    .cb-wh-do { background: rgba(168, 85, 247, 0.16); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.42); }
+    .cb-wh-does { background: rgba(245, 158, 11, 0.22); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.6); }
+
+    /* Verb To Be Badges */
+    .cb-am { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); }
+    .cb-is { background: rgba(245, 158, 11, 0.22); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.6); }
+    .cb-are { background: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45); }
+    .cb-be-neg { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.42); }
+    .cb-be-q { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .cb-be-wh { background: rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.45); }
+
+    /* Continuous Badges */
+    .cb-cont-pos { background: rgba(20, 184, 166, 0.18); color: var(--teal-bright); border: 1px solid rgba(20, 184, 166, 0.5); }
+    .cb-cont-neg { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.45); }
+    .cb-cont-q { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .cb-cont-wh { background: rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.45); }
+
+    .cb-past-pos { background: rgba(99, 102, 241, 0.18); color: var(--indigo-bright); border: 1px solid rgba(99, 102, 241, 0.5); }
+    .cb-past-neg { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.45); }
+    .cb-past-q { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .cb-past-wh { background: rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.45); }
+
+    /* Past Simple Badges */
+    .cb-past-v2 { background: rgba(249, 115, 22, 0.18); color: var(--orange-bright); border: 1px solid rgba(249, 115, 22, 0.5); }
+    .cb-past-didnt { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.45); }
+    .cb-past-did { background: rgba(245, 158, 11, 0.18); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.5); }
+    .cb-past-wh-did { background: rgba(168, 85, 247, 0.18); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.45); }
+
+    .cell-spotlight .c-badge {
+      transform: scale(1.1);
+      box-shadow: 0 0 18px rgba(34, 197, 94, 0.85);
+      outline: 2px solid var(--green-bright);
+    }
+
+    /* Live Preview Strip inside Structure Nodes */
+    .live-preview-strip {
+      margin-top: 10px;
+      padding: 9px 13px;
+      border-radius: 12px;
+      background: var(--card-inner);
+      border: 1px dashed var(--border-hi);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      min-height: 46px;
+    }
+
+    .preview-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-family: ui-monospace, monospace;
+      font-size: calc(14.5px * var(--font-scale));
+      font-weight: 900;
+    }
+
+    /* Connection Port Dots */
+    .port-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px currentColor;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= FLOATING DRAGGABLE / TOGGLABLE HUD BAR ================= -->
+  <div class="hud-bar" id="hud-bar">
+    <!-- Collapsed Mini Pill (Visible only when collapsed) -->
+    <div class="hud-mini-pill" id="hud-mini-pill" title="Click to Expand Controls (Shortcut: H) • Drag to move">
+      <span class="hud-mini-grip">⠿</span>
+      <span class="hud-mini-title">⚡ Controls</span>
+      <span class="hud-mini-badge" id="hud-mini-tense-badge">2 Tenses</span>
+      <span class="hud-kbd-hint">H</span>
+      <span class="hud-mini-arrow">▾</span>
+    </div>
+
+    <!-- Full Expanded Panel Content -->
+    <div class="hud-expanded-content" id="hud-expanded-content">
+      <!-- Top Title & Drag Strip -->
+      <div class="hud-header-bar" id="hud-header-bar">
+        <div class="hud-drag-grip" id="hud-drag-handle" title="Drag to move panel anywhere (Double-click to reset position)">
+          <span class="grip-dots">⠿</span>
+          <span>CONTROLS</span>
+        </div>
+
+        <span class="hud-header-hint">drag anywhere • double-click to center</span>
+
+        <div class="hud-sep"></div>
+
+        <!-- View Mode Switch: 1 Tense vs 2 Tenses -->
+        <div class="hud-group view-mode-switch">
+          <span class="hud-label" style="color:var(--muted); font-size:10.5px;">VIEW:</span>
+          <button type="button" class="icon-btn mode-btn active" id="btn-mode-dual" onclick="setViewMode('dual')" title="Compare Two Tenses Side-by-Side">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="18" rx="2"/><rect x="13.5" y="3" width="7.5" height="18" rx="2"/></svg>
+            <span>2 Tenses</span>
+          </button>
+          <button type="button" class="icon-btn mode-btn" id="btn-mode-single" onclick="setViewMode('single')" title="Focus on One Single Tense">
+            <svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/></svg>
+            <span>1 Tense</span>
+          </button>
+        </div>
+
+        <div class="hud-header-spacer"></div>
+
+        <!-- Quick actions: Reset HUD pos & Collapse HUD -->
+        <div class="hud-group">
+          <button type="button" class="icon-btn hud-sm-btn" onclick="resetHudPosition()" title="Reset Panel to Top-Center">
+            <svg viewBox="0 0 24 24"><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
+          </button>
+          <button type="button" class="icon-btn hud-sm-btn hud-toggle-btn" id="btn-hud-toggle" onclick="toggleHudPanel()" title="Collapse Panel (Press H)">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+            <span class="hud-kbd-hint">H</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Controls Body Row -->
+      <div class="hud-body-row">
+        <!-- DUAL TENSE SELECTORS (Shown in 'dual' mode) -->
+        <div class="hud-tense-controls-dual" id="hud-dual-controls">
+          <div class="hud-group">
+            <span class="hud-label" style="color:var(--cyan);">Left:</span>
+            <select id="sel-tense-left" class="hud-select" onchange="onTenseSelectChange()">
+              <option value="tobe" selected>Present Simple (To Be)</option>
+              <option value="action">Present Simple (Action Verbs)</option>
+              <option value="past">Past Simple</option>
+              <option value="pcont">Present Continuous</option>
+              <option value="pastcont">Past Continuous</option>
+            </select>
+          </div>
+
+          <button type="button" class="icon-btn" onclick="swapTenses()" title="Swap Left and Right Tenses">
+            <svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 5h18"/><polyline points="7 23 3 19 7 15"/><path d="M21 19H3"/></svg>
+          </button>
+
+          <div class="hud-group">
+            <span class="hud-label" style="color:var(--amber-bright);">Right:</span>
+            <select id="sel-tense-right" class="hud-select" onchange="onTenseSelectChange()">
+              <option value="tobe">Present Simple (To Be)</option>
+              <option value="action" selected>Present Simple (Action Verbs)</option>
+              <option value="past">Past Simple</option>
+              <option value="pcont">Present Continuous</option>
+              <option value="pastcont">Past Continuous</option>
+            </select>
+          </div>
+
+          <div class="hud-sep"></div>
+
+          <!-- Quick Presets -->
+          <div class="hud-group">
+            <button type="button" class="icon-btn active" id="btn-pair-simple" onclick="setTensePair('tobe', 'action')" title="Compare To Be vs Action Verbs">
+              <span>Pres Simple</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-pair-past" onclick="setTensePair('action', 'past')" title="Compare Present Simple vs Past Simple">
+              <span>Pres vs Past</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-pair-cont" onclick="setTensePair('pcont', 'pastcont')" title="Compare Present Continuous vs Past Continuous">
+              <span>Continuous</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-pair-pastcont" onclick="setTensePair('past', 'pastcont')" title="Compare Past Simple vs Past Continuous">
+              <span>Past (Simple vs Cont)</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-pair-vs" onclick="setTensePair('action', 'pcont')" title="Compare Action Verbs vs Present Continuous">
+              <span>Simple vs Cont</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SINGLE TENSE SELECTORS (Shown in 'single' mode, hidden by default) -->
+        <div class="hud-tense-controls-single" id="hud-single-controls" style="display:none;">
+          <div class="hud-group">
+            <span class="hud-label" style="color:var(--green-bright);">Tense:</span>
+            <select id="sel-tense-single" class="hud-select" onchange="onSingleTenseChange()">
+              <option value="tobe">Present Simple (To Be)</option>
+              <option value="action" selected>Present Simple (Action Verbs)</option>
+              <option value="past">Past Simple</option>
+              <option value="pcont">Present Continuous</option>
+              <option value="pastcont">Past Continuous</option>
+            </select>
+          </div>
+
+          <div class="hud-sep"></div>
+
+          <!-- Quick Single Tense Buttons -->
+          <div class="hud-group">
+            <button type="button" class="icon-btn" id="btn-single-tobe" onclick="setSingleTense('tobe')">
+              <span>To Be</span>
+            </button>
+            <button type="button" class="icon-btn active" id="btn-single-action" onclick="setSingleTense('action')">
+              <span>Pres Simple</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-single-past" onclick="setSingleTense('past')">
+              <span>Past Simple</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-single-pcont" onclick="setSingleTense('pcont')">
+              <span>Pres Continuous</span>
+            </button>
+            <button type="button" class="icon-btn" id="btn-single-pastcont" onclick="setSingleTense('pastcont')">
+              <span>Past Continuous</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hud-sep"></div>
+
+        <!-- Word / Letter Size Controls (A- / A+) -->
+        <div class="hud-group">
+          <button type="button" class="icon-btn font-btn" onclick="changeFontScale(-0.1)" title="Make Words Smaller (A-)">
+            <span>A&minus;</span>
+          </button>
+          <span class="font-readout" id="font-scale-label">125%</span>
+          <button type="button" class="icon-btn font-btn" onclick="changeFontScale(0.1)" title="Make Words Bigger (A+)">
+            <span>A+</span>
+          </button>
+        </div>
+
+        <div class="hud-sep"></div>
+
+        <!-- Canvas Zoom Controls -->
+        <div class="hud-group">
+          <button type="button" class="icon-btn" onclick="zoomOut()" title="Zoom Canvas Out">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <span class="zoom-readout" id="zoom-label">100%</span>
+          <button type="button" class="icon-btn" onclick="zoomIn()" title="Zoom Canvas In">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button type="button" class="icon-btn" onclick="fitCanvasToScreen()" title="Fit All to Screen">
+            <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </button>
+          <button type="button" class="icon-btn" onclick="resetNodePositions()" title="Reset Positions">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+        </div>
+
+        <div class="hud-sep"></div>
+
+        <!-- Quick Subject Pronoun Selector Strip -->
+        <div class="hud-group" id="hud-pro-strip">
+          <button type="button" class="icon-btn" data-pro="I" onclick="selectSubject('I')">I</button>
+          <button type="button" class="icon-btn" data-pro="you (singular)" onclick="selectSubject('you (singular)')">you</button>
+          <button type="button" class="icon-btn active" data-pro="he" onclick="selectSubject('he')">he</button>
+          <button type="button" class="icon-btn" data-pro="she" onclick="selectSubject('she')">she</button>
+          <button type="button" class="icon-btn" data-pro="it" onclick="selectSubject('it')">it</button>
+          <button type="button" class="icon-btn" data-pro="we" onclick="selectSubject('we')">we</button>
+          <button type="button" class="icon-btn" data-pro="they" onclick="selectSubject('they')">they</button>
+        </div>
+
+        <div class="hud-sep"></div>
+
+        <!-- Toggles: Native Subtitles & Theme -->
+        <div class="hud-group">
+          <button type="button" class="icon-btn active" id="btn-toggle-native" onclick="toggleNativeSubtitles()" title="Toggle Pronoun Translations">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </button>
+          <button type="button" class="icon-btn" onclick="toggleTheme()" title="Toggle Light / Dark Canvas">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INFINITE INTERACTIVE CANVAS ================= -->
+  <div id="canvas-viewport">
+    <div id="canvas-world">
+
+      <!-- SVG CONNECTIONS LAYER -->
+      <svg class="wires-layer" id="wires-svg">
+        <!-- Left Tense Wires (Structure to Table below) -->
+        <path id="wire-left-pos" class="conn-wire wire-pos"></path>
+        <path id="wire-left-neg" class="conn-wire wire-neg"></path>
+        <path id="wire-left-qyn" class="conn-wire wire-qyn"></path>
+        <path id="wire-left-qwh" class="conn-wire wire-qwh"></path>
+
+        <!-- Center Bridge between Left Column & Right Column -->
+        <path id="wire-center-bridge" class="conn-wire wire-bridge"></path>
+
+        <!-- Right Tense Wires (Structure to Table below) -->
+        <path id="wire-right-pos" class="conn-wire wire-pos"></path>
+        <path id="wire-right-neg" class="conn-wire wire-neg"></path>
+        <path id="wire-right-qyn" class="conn-wire wire-qyn"></path>
+        <path id="wire-right-qwh" class="conn-wire wire-qwh"></path>
+      </svg>
+
+      <!-- =========================================================================
+           TENSE 1: PRESENT SIMPLE — VERB 'TO BE' (am / is / are)
+           ========================================================================= -->
+      <div id="node-struct-tobe" class="canvas-node structure-node node-tobe-theme" style="left: 50px; top: 85px;">
+        <div class="node-bar">
+          <div class="node-badge badge-tobe">
+            <span>Present Simple: Verb 'to be'</span>
+          </div>
+          <div class="hud-group">
+            <button type="button" class="icon-btn active" id="btn-toggle-bev" onclick="toggleBeVerbToken(event)" title="Toggle + V token">
+              <span>+ V</span>
+            </button>
+            <button type="button" class="icon-btn table-toggle-btn active" id="btn-toggle-table-tobe" onclick="toggleTenseTable('tobe')" title="Toggle Pronouns Table">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              <span>Table</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="formula-stack">
+          <div class="formula-row frow-pos active-cat" id="frow-tobe-pos" data-cat="pos" onclick="selectCategory('pos')">
+            <span class="type-pill tp-pos">(+)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="be-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--green-bright); color:var(--green-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-neg" id="frow-tobe-neg" data-cat="neg" onclick="selectCategory('neg')">
+            <span class="type-pill tp-neg">(-)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="be-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-not">not</span>
+              <span class="eq-plus be-v-tok">+</span>
+              <span class="eq-tok tok-v be-v-tok">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--red-bright); color:var(--red-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qyn" id="frow-tobe-qyn" data-cat="qyn" onclick="selectCategory('qyn')">
+            <span class="type-pill tp-qyn">(?y/n)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="be-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus be-v-tok">+</span>
+              <span class="eq-tok tok-v be-v-tok">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--amber-bright); color:var(--amber-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qwh" id="frow-tobe-qwh" data-cat="qwh" onclick="selectCategory('qwh')">
+            <span class="type-pill tp-qwh">(w/h)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-wh">w/h</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="be-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="be-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus be-v-tok">+</span>
+              <span class="eq-tok tok-v be-v-tok">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--purple-bright); color:var(--purple-bright);"></div>
+          </div>
+        </div>
+
+        <div class="live-preview-strip" id="preview-tobe"></div>
+      </div>
+
+      <div id="node-table-tobe" class="canvas-node table-node node-tobe-theme" style="left: 50px; top: 485px;">
+        <div class="node-bar">
+          <div class="node-badge badge-tobe">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>am / is / are</span>
+          </div>
+
+          <div class="hud-group">
+            <div class="verb-pills">
+              <button type="button" class="v-pill active-cyan" data-bemode="both" onclick="setBeDisplayMode('both')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                <span>isn't / is not</span>
+              </button>
+              <button type="button" class="v-pill" data-bemode="short" onclick="setBeDisplayMode('short')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                <span>isn't / aren't</span>
+              </button>
+            </div>
+            <button type="button" class="icon-btn hud-sm-btn" onclick="toggleTenseTable('tobe')" title="Hide this pronouns table">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="concord-table" id="table-tobe">
+            <thead>
+              <tr>
+                <th class="th-subj-header">
+                  <div class="th-top-tag" style="color:var(--cyan);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Subject</span>
+                  </div>
+                </th>
+                <th data-col="pos" id="th-tobe-pos" onclick="selectCategory('pos')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--green-bright);">(+)</span>
+                    <span class="th-sub-formula">am / is / are</span>
+                  </div>
+                </th>
+                <th data-col="neg" id="th-tobe-neg" onclick="selectCategory('neg')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--red-bright);">(-)</span>
+                    <span class="th-sub-formula">am not / isn't</span>
+                  </div>
+                </th>
+                <th data-col="qyn" id="th-tobe-qyn" onclick="selectCategory('qyn')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--amber-bright);">(?y/n)</span>
+                    <span class="th-sub-formula">am / is / are</span>
+                  </div>
+                </th>
+                <th data-col="qwh" id="th-tobe-qwh" onclick="selectCategory('qwh')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--purple-bright);">(w/h)</span>
+                    <span class="th-sub-formula">why am / is / are</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tbody-tobe"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           TENSE 2: PRESENT SIMPLE — ACTION VERBS (V / Vs & do / does)
+           ========================================================================= -->
+      <div id="node-struct-action" class="canvas-node structure-node node-action-theme" style="left: 830px; top: 85px;">
+        <div class="node-bar">
+          <div class="node-badge badge-action">
+            <span>Present Simple: Action Verbs</span>
+          </div>
+          <button type="button" class="icon-btn table-toggle-btn active" id="btn-toggle-table-action" onclick="toggleTenseTable('action')" title="Toggle Pronouns Table">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Table</span>
+          </button>
+        </div>
+
+        <div class="formula-stack">
+          <div class="formula-row frow-pos active-cat" id="frow-action-pos" data-cat="pos" onclick="selectCategory('pos')">
+            <span class="type-pill tp-pos">(+)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">
+                <span class="sub-choice" data-role="v-base">V</span><span class="sub-slash">/</span><span class="sub-choice" data-role="v-s">Vs</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--green-bright); color:var(--green-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-neg" id="frow-action-neg" data-cat="neg" onclick="selectCategory('neg')">
+            <span class="type-pill tp-neg">(-)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-aux">
+                <span class="sub-choice" data-role="aux-do">do</span><span class="sub-slash">/</span><span class="sub-choice" data-role="aux-does">does</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-not">not</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--red-bright); color:var(--red-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qyn" id="frow-action-qyn" data-cat="qyn" onclick="selectCategory('qyn')">
+            <span class="type-pill tp-qyn">(?y/n)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-aux">
+                <span class="sub-choice" data-role="aux-do">do</span><span class="sub-slash">/</span><span class="sub-choice" data-role="aux-does">does</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--amber-bright); color:var(--amber-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qwh" id="frow-action-qwh" data-cat="qwh" onclick="selectCategory('qwh')">
+            <span class="type-pill tp-qwh">(w/h)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-wh">w/h</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-aux">
+                <span class="sub-choice" data-role="aux-do">do</span><span class="sub-slash">/</span><span class="sub-choice" data-role="aux-does">does</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--purple-bright); color:var(--purple-bright);"></div>
+          </div>
+        </div>
+
+        <div class="live-preview-strip" id="preview-action"></div>
+      </div>
+
+      <div id="node-table-action" class="canvas-node table-node node-action-theme" style="left: 830px; top: 485px;">
+        <div class="node-bar">
+          <div class="node-badge badge-action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>V / Vs &bull; do / does</span>
+          </div>
+
+          <div class="hud-group">
+            <div class="verb-pills">
+              <button type="button" class="v-pill active-amber" data-vmode="raw" onclick="setActionVerbMode('raw')">
+                <span>V / Vs</span>
+              </button>
+              <button type="button" class="v-pill" data-vmode="work" onclick="setActionVerbMode('work')">
+                <span>work</span>
+              </button>
+              <button type="button" class="v-pill" data-vmode="live" onclick="setActionVerbMode('live')">
+                <span>live</span>
+              </button>
+              <button type="button" class="v-pill" data-vmode="play" onclick="setActionVerbMode('play')">
+                <span>play</span>
+              </button>
+            </div>
+            <button type="button" class="icon-btn hud-sm-btn" onclick="toggleTenseTable('action')" title="Hide this pronouns table">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="concord-table" id="table-action">
+            <thead>
+              <tr>
+                <th class="th-subj-header">
+                  <div class="th-top-tag" style="color:var(--cyan);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Subject</span>
+                  </div>
+                </th>
+                <th data-col="pos" id="th-action-pos" onclick="selectCategory('pos')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--green-bright);">(+)</span>
+                    <span class="th-sub-formula">V / Vs</span>
+                  </div>
+                </th>
+                <th data-col="neg" id="th-action-neg" onclick="selectCategory('neg')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--red-bright);">(-)</span>
+                    <span class="th-sub-formula">don't / doesn't</span>
+                  </div>
+                </th>
+                <th data-col="qyn" id="th-action-qyn" onclick="selectCategory('qyn')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--amber-bright);">(?y/n)</span>
+                    <span class="th-sub-formula">do / does</span>
+                  </div>
+                </th>
+                <th data-col="qwh" id="th-action-qwh" onclick="selectCategory('qwh')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--purple-bright);">(w/h)</span>
+                    <span class="th-sub-formula">w/h + do / does</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tbody-action"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           TENSE 3: PRESENT CONTINUOUS (am / is / are + V-ing)
+           ========================================================================= -->
+      <div id="node-struct-pcont" class="canvas-node structure-node node-pcont-theme" style="left: 50px; top: 85px; display: none;">
+        <div class="node-bar">
+          <div class="node-badge badge-pcont">
+            <span>Present Continuous</span>
+          </div>
+          <button type="button" class="icon-btn table-toggle-btn active" id="btn-toggle-table-pcont" onclick="toggleTenseTable('pcont')" title="Toggle Pronouns Table">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Table</span>
+          </button>
+        </div>
+
+        <div class="formula-stack">
+          <div class="formula-row frow-pos active-cat" id="frow-pcont-pos" data-cat="pos" onclick="selectCategory('pos')">
+            <span class="type-pill tp-pos">(+)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="pcont-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--green-bright); color:var(--green-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-neg" id="frow-pcont-neg" data-cat="neg" onclick="selectCategory('neg')">
+            <span class="type-pill tp-neg">(-)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="pcont-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-not">not</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--red-bright); color:var(--red-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qyn" id="frow-pcont-qyn" data-cat="qyn" onclick="selectCategory('qyn')">
+            <span class="type-pill tp-qyn">(?y/n)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="pcont-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--amber-bright); color:var(--amber-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qwh" id="frow-pcont-qwh" data-cat="qwh" onclick="selectCategory('qwh')">
+            <span class="type-pill tp-qwh">(w/h)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-wh">w/h</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-be">
+                <span class="sub-choice" data-role="pcont-am">am</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-is">is</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pcont-are">are</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--purple-bright); color:var(--purple-bright);"></div>
+          </div>
+        </div>
+
+        <div class="live-preview-strip" id="preview-pcont"></div>
+      </div>
+
+      <div id="node-table-pcont" class="canvas-node table-node node-pcont-theme" style="left: 50px; top: 485px; display: none;">
+        <div class="node-bar">
+          <div class="node-badge badge-pcont">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>am/is/are + V-ing</span>
+          </div>
+
+          <div class="hud-group">
+            <div class="verb-pills">
+              <button type="button" class="v-pill active-teal" data-cvmode="raw" onclick="setContVerbMode('raw')">
+                <span>V-ing</span>
+              </button>
+              <button type="button" class="v-pill" data-cvmode="working" onclick="setContVerbMode('working')">
+                <span>working</span>
+              </button>
+              <button type="button" class="v-pill" data-cvmode="living" onclick="setContVerbMode('living')">
+                <span>living</span>
+              </button>
+              <button type="button" class="v-pill" data-cvmode="playing" onclick="setContVerbMode('playing')">
+                <span>playing</span>
+              </button>
+            </div>
+            <button type="button" class="icon-btn hud-sm-btn" onclick="toggleTenseTable('pcont')" title="Hide this pronouns table">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="concord-table" id="table-pcont">
+            <thead>
+              <tr>
+                <th class="th-subj-header">
+                  <div class="th-top-tag" style="color:var(--teal-bright);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Subject</span>
+                  </div>
+                </th>
+                <th data-col="pos" id="th-pcont-pos" onclick="selectCategory('pos')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--green-bright);">(+)</span>
+                    <span class="th-sub-formula">am/is/are + V-ing</span>
+                  </div>
+                </th>
+                <th data-col="neg" id="th-pcont-neg" onclick="selectCategory('neg')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--red-bright);">(-)</span>
+                    <span class="th-sub-formula">isn't/aren't + V-ing</span>
+                  </div>
+                </th>
+                <th data-col="qyn" id="th-pcont-qyn" onclick="selectCategory('qyn')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--amber-bright);">(?y/n)</span>
+                    <span class="th-sub-formula">am/is/are + S + V-ing</span>
+                  </div>
+                </th>
+                <th data-col="qwh" id="th-pcont-qwh" onclick="selectCategory('qwh')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--purple-bright);">(w/h)</span>
+                    <span class="th-sub-formula">why am/is/are + S + V-ing</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tbody-pcont"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           TENSE 4: PAST CONTINUOUS (was / were + V-ing)
+           ========================================================================= -->
+      <div id="node-struct-pastcont" class="canvas-node structure-node node-pastcont-theme" style="left: 830px; top: 85px; display: none;">
+        <div class="node-bar">
+          <div class="node-badge badge-pastcont">
+            <span>Past Continuous</span>
+          </div>
+          <button type="button" class="icon-btn table-toggle-btn active" id="btn-toggle-table-pastcont" onclick="toggleTenseTable('pastcont')" title="Toggle Pronouns Table">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Table</span>
+          </button>
+        </div>
+
+        <div class="formula-stack">
+          <div class="formula-row frow-pos active-cat" id="frow-pastcont-pos" data-cat="pos" onclick="selectCategory('pos')">
+            <span class="type-pill tp-pos">(+)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-waswere">
+                <span class="sub-choice" data-role="pastcont-was">was</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pastcont-were">were</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--green-bright); color:var(--green-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-neg" id="frow-pastcont-neg" data-cat="neg" onclick="selectCategory('neg')">
+            <span class="type-pill tp-neg">(-)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-waswere">
+                <span class="sub-choice" data-role="pastcont-was">was</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pastcont-were">were</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-not">not</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--red-bright); color:var(--red-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qyn" id="frow-pastcont-qyn" data-cat="qyn" onclick="selectCategory('qyn')">
+            <span class="type-pill tp-qyn">(?y/n)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-waswere">
+                <span class="sub-choice" data-role="pastcont-was">was</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pastcont-were">were</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--amber-bright); color:var(--amber-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qwh" id="frow-pastcont-qwh" data-cat="qwh" onclick="selectCategory('qwh')">
+            <span class="type-pill tp-qwh">(w/h)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-wh">w/h</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-waswere">
+                <span class="sub-choice" data-role="pastcont-was">was</span><span class="sub-slash">/</span><span class="sub-choice" data-role="pastcont-were">were</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-ving">V-ing</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--purple-bright); color:var(--purple-bright);"></div>
+          </div>
+        </div>
+
+        <div class="live-preview-strip" id="preview-pastcont"></div>
+      </div>
+
+      <div id="node-table-pastcont" class="canvas-node table-node node-pastcont-theme" style="left: 830px; top: 485px; display: none;">
+        <div class="node-bar">
+          <div class="node-badge badge-pastcont">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 8 14"/></svg>
+            <span>was/were + V-ing</span>
+          </div>
+
+          <div class="hud-group">
+            <div class="verb-pills">
+              <button type="button" class="v-pill active-indigo" data-pastcvmode="raw" onclick="setPastContVerbMode('raw')">
+                <span>V-ing</span>
+              </button>
+              <button type="button" class="v-pill" data-pastcvmode="working" onclick="setPastContVerbMode('working')">
+                <span>working</span>
+              </button>
+              <button type="button" class="v-pill" data-pastcvmode="living" onclick="setPastContVerbMode('living')">
+                <span>living</span>
+              </button>
+              <button type="button" class="v-pill" data-pastcvmode="playing" onclick="setPastContVerbMode('playing')">
+                <span>playing</span>
+              </button>
+            </div>
+            <button type="button" class="icon-btn hud-sm-btn" onclick="toggleTenseTable('pastcont')" title="Hide this pronouns table">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="concord-table" id="table-pastcont">
+            <thead>
+              <tr>
+                <th class="th-subj-header">
+                  <div class="th-top-tag" style="color:var(--indigo-bright);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Subject</span>
+                  </div>
+                </th>
+                <th data-col="pos" id="th-pastcont-pos" onclick="selectCategory('pos')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--green-bright);">(+)</span>
+                    <span class="th-sub-formula">was/were + V-ing</span>
+                  </div>
+                </th>
+                <th data-col="neg" id="th-pastcont-neg" onclick="selectCategory('neg')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--red-bright);">(-)</span>
+                    <span class="th-sub-formula">wasn't/weren't + V-ing</span>
+                  </div>
+                </th>
+                <th data-col="qyn" id="th-pastcont-qyn" onclick="selectCategory('qyn')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--amber-bright);">(?y/n)</span>
+                    <span class="th-sub-formula">was/were + S + V-ing</span>
+                  </div>
+                </th>
+                <th data-col="qwh" id="th-pastcont-qwh" onclick="selectCategory('qwh')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--purple-bright);">(w/h)</span>
+                    <span class="th-sub-formula">why was/were + S + V-ing</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tbody-pastcont"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           TENSE: PAST SIMPLE — ACTION VERBS (V2/Ved & did / didn't)
+           ========================================================================= -->
+      <div id="node-struct-past" class="canvas-node structure-node node-past-theme" style="left: 50px; top: 85px; display: none;">
+        <div class="node-bar">
+          <div class="node-badge badge-past">
+            <span>Past Simple: Action Verbs</span>
+          </div>
+          <button type="button" class="icon-btn table-toggle-btn active" id="btn-toggle-table-past" onclick="toggleTenseTable('past')" title="Toggle Pronouns Table">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Table</span>
+          </button>
+        </div>
+
+        <div class="formula-stack">
+          <div class="formula-row frow-pos active-cat" id="frow-past-pos" data-cat="pos" onclick="selectCategory('pos')">
+            <span class="type-pill tp-pos">(+)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v2">
+                <span class="sub-choice" data-role="past-v2">V2 / Ved</span>
+              </span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--green-bright); color:var(--green-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-neg" id="frow-past-neg" data-cat="neg" onclick="selectCategory('neg')">
+            <span class="type-pill tp-neg">(-)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-did">did</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-not">not</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+            </div>
+            <div class="port-dot" style="background:var(--red-bright); color:var(--red-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qyn" id="frow-past-qyn" data-cat="qyn" onclick="selectCategory('qyn')">
+            <span class="type-pill tp-qyn">(?y/n)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-did">did</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--amber-bright); color:var(--amber-bright);"></div>
+          </div>
+
+          <div class="formula-row frow-qwh" id="frow-past-qwh" data-cat="qwh" onclick="selectCategory('qwh')">
+            <span class="type-pill tp-qwh">(w/h)</span>
+            <div class="equation-track">
+              <span class="eq-tok tok-wh">w/h</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-did">did</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-s">S</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-v">V</span>
+              <span class="eq-plus">+</span>
+              <span class="eq-tok tok-o">O</span>
+              <span class="eq-qmark">?</span>
+            </div>
+            <div class="port-dot" style="background:var(--purple-bright); color:var(--purple-bright);"></div>
+          </div>
+        </div>
+
+        <div class="live-preview-strip" id="preview-past"></div>
+      </div>
+
+      <div id="node-table-past" class="canvas-node table-node node-past-theme" style="left: 50px; top: 485px; display: none;">
+        <div class="node-bar">
+          <div class="node-badge badge-past">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/></svg>
+            <span>V2 / Ved &bull; did / didn't</span>
+          </div>
+
+          <div class="hud-group">
+            <div class="verb-pills">
+              <button type="button" class="v-pill active-orange" data-pastmode="raw" onclick="setPastVerbMode('raw')">
+                <span>V2 / Ved</span>
+              </button>
+              <button type="button" class="v-pill" data-pastmode="work" onclick="setPastVerbMode('work')">
+                <span>worked</span>
+              </button>
+              <button type="button" class="v-pill" data-pastmode="live" onclick="setPastVerbMode('live')">
+                <span>lived</span>
+              </button>
+              <button type="button" class="v-pill" data-pastmode="play" onclick="setPastVerbMode('play')">
+                <span>played</span>
+              </button>
+              <button type="button" class="v-pill" data-pastmode="went" onclick="setPastVerbMode('went')">
+                <span>went (go)</span>
+              </button>
+            </div>
+            <button type="button" class="icon-btn hud-sm-btn" onclick="toggleTenseTable('past')" title="Hide this pronouns table">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="matrix-wrap">
+          <table class="concord-table" id="table-past">
+            <thead>
+              <tr>
+                <th class="th-subj-header">
+                  <div class="th-top-tag" style="color:var(--orange-bright);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Subject</span>
+                  </div>
+                </th>
+                <th data-col="pos" id="th-past-pos" onclick="selectCategory('pos')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--green-bright);">(+)</span>
+                    <span class="th-sub-formula">V2 / Ved</span>
+                  </div>
+                </th>
+                <th data-col="neg" id="th-past-neg" onclick="selectCategory('neg')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--red-bright);">(-)</span>
+                    <span class="th-sub-formula">didn't + V</span>
+                  </div>
+                </th>
+                <th data-col="qyn" id="th-past-qyn" onclick="selectCategory('qyn')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--amber-bright);">(?y/n)</span>
+                    <span class="th-sub-formula">did + S + V</span>
+                  </div>
+                </th>
+                <th data-col="qwh" id="th-past-qwh" onclick="selectCategory('qwh')">
+                  <div class="th-head-box">
+                    <span class="th-top-tag" style="color:var(--purple-bright);">(w/h)</span>
+                    <span class="th-sub-formula">why did + S + V</span>
+                  </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="tbody-past"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* ============================================================================
+   CUSTOM VECTOR SVG AVATARS FOR ALL 8 SUBJECT PRONOUNS (ONLY IN TABLES)
+   ============================================================================ */
+const PRONOUN_SVGS = {
+  "I": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="6" r="3.5"/>
+    <path d="M6 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/>
+    <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+  </svg>`,
+  "you (singular)": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10" cy="7" r="3.5"/>
+    <path d="M4 20v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/>
+    <path d="M16 10h6m-2-2l2 2-2 2"/>
+  </svg>`,
+  "he": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="7" r="4"/>
+    <path d="M5 21v-2a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6v2"/>
+    <polygon points="10 13 12 16 14 13" fill="currentColor"/>
+  </svg>`,
+  "she": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="7" r="3.8"/>
+    <path d="M8 7c-1.5 2-2 5-2 6m10-6c1.5 2 2 5 2 6"/>
+    <path d="M6 21l2-8h8l2 8Z"/>
+  </svg>`,
+  "it": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="7" width="14" height="12" rx="3"/>
+    <line x1="12" y1="3" x2="12" y2="7"/>
+    <circle cx="12" cy="3" r="1" fill="currentColor"/>
+    <circle cx="9.5" cy="12" r="1" fill="currentColor"/>
+    <circle cx="14.5" cy="12" r="1" fill="currentColor"/>
+    <line x1="9" y1="16" x2="15" y2="16"/>
+  </svg>`,
+  "we": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="8.5" cy="7" r="3"/>
+    <circle cx="15.5" cy="7" r="3"/>
+    <path d="M3 20v-1.5a4.5 4.5 0 0 1 4.5-4.5h2a4.5 4.5 0 0 1 4.5 4.5V20"/>
+    <path d="M13 20v-1.5a4.5 4.5 0 0 1 4.5-4.5h1A3.5 3.5 0 0 1 22 17.5V20"/>
+  </svg>`,
+  "you (plural)": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="7.5" cy="7.5" r="2.8"/>
+    <circle cx="14" cy="7.5" r="2.8"/>
+    <path d="M2.5 20v-1.5a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4V20"/>
+    <path d="M11.5 20v-1.5a4 4 0 0 1 4-4h1.5a3.5 3.5 0 0 1 3.5 3.5V20"/>
+    <path d="M18 4h4m-1.5-1.5L22 4l-1.5 1.5"/>
+  </svg>`,
+  "they": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="6.5" r="2.8"/>
+    <circle cx="6" cy="8.5" r="2.3"/>
+    <circle cx="18" cy="8.5" r="2.3"/>
+    <path d="M7.5 20v-1.5a4 4 0 0 1 4-4h1a4 4 0 0 1 4 4V20"/>
+    <path d="M2 20v-1a3.5 3.5 0 0 1 3.5-3.5H7"/>
+    <path d="M22 20v-1a3.5 3.5 0 0 0-3.5-3.5H17"/>
+  </svg>`
+};
+
+/* ============================================================================
+   CONCORDANCE DATA
+   ============================================================================ */
+const SUBJECT_ROWS = [
+  { key: "I",              label: "I",           native: "(men / я / ben)",     is3sg: false, is1sgOr3sg: true,  beAff: "am",  beNegBoth: "am not",           beNegShort: "am not",  beQ: "am",  beWh: "why am",  pastBe: "was", pastNeg: "wasn't" },
+  { key: "you (singular)", label: "you (sing.)", native: "(sen / ты / sen)",    is3sg: false, is1sgOr3sg: false, beAff: "are", beNegBoth: "aren't / are not", beNegShort: "aren't",  beQ: "are", beWh: "why are", pastBe: "were", pastNeg: "weren't" },
+  { key: "he",             label: "he",          native: "(ol / он / o)",       is3sg: true,  is1sgOr3sg: true,  beAff: "is",  beNegBoth: "isn't / is not",   beNegShort: "isn't",   beQ: "is",  beWh: "why is",  pastBe: "was", pastNeg: "wasn't" },
+  { key: "she",            label: "she",         native: "(ol / она / o)",      is3sg: true,  is1sgOr3sg: true,  beAff: "is",  beNegBoth: "isn't / is not",   beNegShort: "isn't",   beQ: "is",  beWh: "why is",  pastBe: "was", pastNeg: "wasn't" },
+  { key: "it",             label: "it",          native: "(ol / оно / o)",      is3sg: true,  is1sgOr3sg: true,  beAff: "is",  beNegBoth: "isn't / is not",   beNegShort: "isn't",   beQ: "is",  beWh: "why is",  pastBe: "was", pastNeg: "wasn't" },
+  { key: "we",             label: "we",          native: "(biz / мы / biz)",    is3sg: false, is1sgOr3sg: false, beAff: "are", beNegBoth: "aren't / are not", beNegShort: "aren't",  beQ: "are", beWh: "why are", pastBe: "were", pastNeg: "weren't" },
+  { key: "you (plural)",   label: "you (plur.)", native: "(siz / вы / siz)",    is3sg: false, is1sgOr3sg: false, beAff: "are", beNegBoth: "aren't / are not", beNegShort: "aren't",  beQ: "are", beWh: "why are", pastBe: "were", pastNeg: "weren't" },
+  { key: "they",           label: "they",        native: "(olar / они / onlar)",is3sg: false, is1sgOr3sg: false, beAff: "are", beNegBoth: "aren't / are not", beNegShort: "aren't",  beQ: "are", beWh: "why are", pastBe: "were", pastNeg: "weren't" }
+];
+
+let selectedPro = "he";
+let selectedCat = "pos"; // 'pos' | 'neg' | 'qyn' | 'qwh'
+let actionVerbMode = "raw"; // 'raw' | 'work' | 'live' | 'play'
+let pastVerbMode = "raw"; // 'raw' | 'work' | 'live' | 'play' | 'went'
+let contVerbMode = "working"; // 'raw' | 'working' | 'living' | 'playing'
+let pastContVerbMode = "working"; // 'raw' | 'working' | 'living' | 'playing'
+let beDisplayMode = "both"; // 'both' | 'short'
+let showBeVerbToken = true;
+let fontScale = 1.25;
+
+// VIEW MODE: 'dual' (2 tenses side-by-side) or 'single' (1 focused tense)
+let viewMode = "dual";
+let singleTenseKey = "action"; // 'tobe' | 'action' | 'past' | 'pcont' | 'pastcont'
+
+// ACTIVE TENSES FOR DUAL MODE (Left Column & Right Column)
+let leftTenseKey = "tobe";     // 'tobe' | 'action' | 'past' | 'pcont' | 'pastcont'
+let rightTenseKey = "action";  // 'tobe' | 'action' | 'past' | 'pcont' | 'pastcont'
+
+// INDEPENDENT TABLE VISIBILITY PER TENSE
+const tableVisibility = {
+  tobe: true,
+  action: true,
+  past: true,
+  pcont: true,
+  pastcont: true
+};
+
+function toggleTenseTable(tenseKey) {
+  if (tableVisibility[tenseKey] === undefined) return;
+  tableVisibility[tenseKey] = !tableVisibility[tenseKey];
+  updateTableVisibilityButtons();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function updateTableVisibilityButtons() {
+  ["tobe", "action", "past", "pcont", "pastcont"].forEach(t => {
+    const btn = document.getElementById(`btn-toggle-table-${t}`);
+    if (btn) {
+      const isVis = !!tableVisibility[t];
+      btn.classList.toggle("active", isVis);
+      btn.title = isVis ? "Hide Pronouns Table" : "Show Pronouns Table";
+    }
+  });
+}
+
+function setPastVerbMode(mode) {
+  pastVerbMode = mode;
+  document.querySelectorAll("[data-pastmode]").forEach(btn => {
+    btn.classList.toggle("active-orange", btn.dataset.pastmode === mode);
+  });
+  renderAll();
+}
+
+/* ============================================================================
+   TENSE SELECTION & CANVAS PLACEMENT (1 TENSE OR 2 TENSES SIDE-BY-SIDE)
+   ============================================================================ */
+function setViewMode(mode) {
+  viewMode = mode;
+  const btnDual = document.getElementById("btn-mode-dual");
+  const btnSingle = document.getElementById("btn-mode-single");
+  if (btnDual) btnDual.classList.toggle("active", viewMode === "dual");
+  if (btnSingle) btnSingle.classList.toggle("active", viewMode === "single");
+
+  const dualControls = document.getElementById("hud-dual-controls");
+  const singleControls = document.getElementById("hud-single-controls");
+  if (dualControls) dualControls.style.display = viewMode === "dual" ? "flex" : "none";
+  if (singleControls) singleControls.style.display = viewMode === "single" ? "flex" : "none";
+
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function setSingleTense(tenseKey) {
+  singleTenseKey = tenseKey;
+  const sel = document.getElementById("sel-tense-single");
+  if (sel) sel.value = tenseKey;
+  updateSingleTenseButtons();
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function onSingleTenseChange() {
+  const sel = document.getElementById("sel-tense-single");
+  if (sel) singleTenseKey = sel.value;
+  updateSingleTenseButtons();
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function updateSingleTenseButtons() {
+  ["tobe", "action", "past", "pcont", "pastcont"].forEach(k => {
+    const btn = document.getElementById(`btn-single-${k}`);
+    if (btn) btn.classList.toggle("active", singleTenseKey === k);
+  });
+}
+
+function setTensePair(leftKey, rightKey) {
+  leftTenseKey = leftKey;
+  rightTenseKey = rightKey;
+  document.getElementById("sel-tense-left").value = leftKey;
+  document.getElementById("sel-tense-right").value = rightKey;
+
+  updatePresetButtons();
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function onTenseSelectChange() {
+  leftTenseKey = document.getElementById("sel-tense-left").value;
+  rightTenseKey = document.getElementById("sel-tense-right").value;
+
+  updatePresetButtons();
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function swapTenses() {
+  const tmp = leftTenseKey;
+  leftTenseKey = rightTenseKey;
+  rightTenseKey = tmp;
+  document.getElementById("sel-tense-left").value = leftTenseKey;
+  document.getElementById("sel-tense-right").value = rightTenseKey;
+
+  updatePresetButtons();
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+function updatePresetButtons() {
+  const isSimple = (leftTenseKey === "tobe" && rightTenseKey === "action");
+  const isPast = (leftTenseKey === "action" && rightTenseKey === "past");
+  const isCont = (leftTenseKey === "pcont" && rightTenseKey === "pastcont");
+  const isPastCont = (leftTenseKey === "past" && rightTenseKey === "pastcont");
+  const isVs = (leftTenseKey === "action" && rightTenseKey === "pcont");
+
+  const bSimple = document.getElementById("btn-pair-simple");
+  const bPast = document.getElementById("btn-pair-past");
+  const bCont = document.getElementById("btn-pair-cont");
+  const bPastCont = document.getElementById("btn-pair-pastcont");
+  const bVs = document.getElementById("btn-pair-vs");
+  if (bSimple) bSimple.classList.toggle("active", isSimple);
+  if (bPast) bPast.classList.toggle("active", isPast);
+  if (bCont) bCont.classList.toggle("active", isCont);
+  if (bPastCont) bPastCont.classList.toggle("active", isPastCont);
+  if (bVs) bVs.classList.toggle("active", isVs);
+}
+
+function updateMiniPillBadge() {
+  const badge = document.getElementById("hud-mini-tense-badge");
+  if (!badge) return;
+  const tenseNames = {
+    tobe: "To Be",
+    action: "Action Verbs",
+    past: "Past Simple",
+    pcont: "Pres Continuous",
+    pastcont: "Past Continuous"
+  };
+  if (viewMode === "single") {
+    badge.textContent = `1 Tense • ${tenseNames[singleTenseKey] || singleTenseKey}`;
+  } else {
+    badge.textContent = `2 Tenses • ${tenseNames[leftTenseKey] || leftTenseKey} vs ${tenseNames[rightTenseKey] || rightTenseKey}`;
+  }
+}
+
+function autoSpaceNodes() {
+  const allTenses = ["tobe", "action", "past", "pcont", "pastcont"];
+
+  const colWidth = 740;
+  const colGap = 40;
+  const xLeft = 50;
+  const xRight = xLeft + colWidth + colGap;
+
+  const yTop = 85;
+  const structH = 310;
+  const rowGap = 28;
+  const yBottom = yTop + structH + rowGap;
+
+  if (viewMode === "single") {
+    // Single Tense Mode: Display only singleTenseKey
+    allTenses.forEach(t => {
+      const sEl = document.getElementById(`node-struct-${t}`);
+      const tEl = document.getElementById(`node-table-${t}`);
+      if (t === singleTenseKey) {
+        if (sEl) { sEl.style.display = "block"; sEl.style.left = `${xLeft}px`; sEl.style.top = `${yTop}px`; }
+        if (tEl) {
+          tEl.style.display = tableVisibility[t] ? "block" : "none";
+          tEl.style.left = `${xLeft}px`;
+          tEl.style.top = `${yBottom}px`;
+        }
+      } else {
+        if (sEl) sEl.style.display = "none";
+        if (tEl) tEl.style.display = "none";
+      }
+    });
+  } else {
+    // Dual Tense Mode: Display Left and Right columns side-by-side
+    allTenses.forEach(t => {
+      const sEl = document.getElementById(`node-struct-${t}`);
+      const tEl = document.getElementById(`node-table-${t}`);
+      if (t === leftTenseKey) {
+        if (sEl) { sEl.style.display = "block"; sEl.style.left = `${xLeft}px`; sEl.style.top = `${yTop}px`; }
+        if (tEl) {
+          tEl.style.display = tableVisibility[t] ? "block" : "none";
+          tEl.style.left = `${xLeft}px`;
+          tEl.style.top = `${yBottom}px`;
+        }
+      } else if (t === rightTenseKey) {
+        if (sEl) { sEl.style.display = "block"; sEl.style.left = `${xRight}px`; sEl.style.top = `${yTop}px`; }
+        if (tEl) {
+          tEl.style.display = tableVisibility[t] ? "block" : "none";
+          tEl.style.left = `${xRight}px`;
+          tEl.style.top = `${yBottom}px`;
+        }
+      } else {
+        if (sEl) sEl.style.display = "none";
+        if (tEl) tEl.style.display = "none";
+      }
+    });
+  }
+
+  updateTableVisibilityButtons();
+  renderAll();
+}
+
+function changeFontScale(delta) {
+  fontScale = Math.min(2.0, Math.max(0.8, +(fontScale + delta).toFixed(2)));
+  document.documentElement.style.setProperty("--font-scale", fontScale);
+  const label = document.getElementById("font-scale-label");
+  if (label) label.textContent = `${Math.round(fontScale * 100)}%`;
+  requestAnimationFrame(() => {
+    autoSpaceNodes();
+    fitCanvasToScreen();
+  });
+}
+
+/* ============================================================================
+   RENDER TABLES & ALL STRUCTURE HIGHLIGHTS
+   ============================================================================ */
+function renderAll() {
+  renderToBeTable();
+  renderActionTable();
+  renderPastTable();
+  renderPresentContTable();
+  renderPastContTable();
+  updateStructureTokens();
+  updateLivePreviews();
+  updateWires();
+}
+
+function renderToBeTable() {
+  const tbody = document.getElementById("tbody-tobe");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  ["pos", "neg", "qyn", "qwh"].forEach(col => {
+    const th = document.getElementById(`th-tobe-${col}`);
+    if (th) th.classList.toggle("col-hi", selectedCat === col);
+  });
+
+  SUBJECT_ROWS.forEach(r => {
+    const tr = document.createElement("tr");
+    const isRowActive = r.key === selectedPro;
+    tr.className = (r.is3sg ? "row-3sg " : "") + (isRowActive ? "active-pro-row" : "");
+
+    const affClass = r.beAff === "am" ? "cb-am" : (r.beAff === "is" ? "cb-is" : "cb-are");
+    const negText = beDisplayMode === "both" ? r.beNegBoth : r.beNegShort;
+
+    tr.innerHTML = `
+      <td class="td-subj" onclick="selectSubject('${r.key}')">
+        <div class="subj-flex">
+          <div class="pro-avatar">${PRONOUN_SVGS[r.key]}</div>
+          <div class="pro-text-wrap">
+            <span class="pro-en">${r.label}</span>
+            <span class="pro-nat">${r.native}</span>
+          </div>
+        </div>
+      </td>
+      <td class="${selectedCat === 'pos' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'pos' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'pos')"><span class="c-badge ${affClass}">${r.beAff}</span></td>
+      <td class="${selectedCat === 'neg' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'neg' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'neg')"><span class="c-badge cb-be-neg">${negText}</span></td>
+      <td class="${selectedCat === 'qyn' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qyn' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qyn')"><span class="c-badge cb-be-q">${r.beQ}</span></td>
+      <td class="${selectedCat === 'qwh' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qwh' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qwh')"><span class="c-badge cb-be-wh">${r.beWh}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderActionTable() {
+  const tbody = document.getElementById("tbody-action");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  ["pos", "neg", "qyn", "qwh"].forEach(col => {
+    const th = document.getElementById(`th-action-${col}`);
+    if (th) th.classList.toggle("col-hi", selectedCat === col);
+  });
+
+  SUBJECT_ROWS.forEach(r => {
+    const tr = document.createElement("tr");
+    const isRowActive = r.key === selectedPro;
+    tr.className = (r.is3sg ? "row-3sg " : "") + (isRowActive ? "active-pro-row" : "");
+
+    let cPos = "", cNeg = "", cQyn = "", cQwh = "";
+
+    if (actionVerbMode === "raw") {
+      if (r.is3sg) {
+        cPos = `<span class="c-badge cb-vs">Vs</span>`;
+        cNeg = `<span class="c-badge cb-doesnt">doesn't</span>`;
+        cQyn = `<span class="c-badge cb-does">does</span>`;
+        cQwh = `<span class="c-badge cb-wh-does">why does</span>`;
+      } else {
+        cPos = `<span class="c-badge cb-v">V</span>`;
+        cNeg = `<span class="c-badge cb-dont">don't</span>`;
+        cQyn = `<span class="c-badge cb-do">do</span>`;
+        cQwh = `<span class="c-badge cb-wh-do">why do</span>`;
+      }
+    } else {
+      const vBase = actionVerbMode;
+      const vS = vBase + "s";
+      const whWord = vBase === "live" ? "where" : "why";
+      if (r.is3sg) {
+        cPos = `<span class="c-badge cb-vs">${vS}</span>`;
+        cNeg = `<span class="c-badge cb-doesnt">doesn't ${vBase}</span>`;
+        cQyn = `<span class="c-badge cb-does">does + S + ${vBase}</span>`;
+        cQwh = `<span class="c-badge cb-wh-does">${whWord} does + S + ${vBase}</span>`;
+      } else {
+        cPos = `<span class="c-badge cb-v">${vBase}</span>`;
+        cNeg = `<span class="c-badge cb-dont">don't ${vBase}</span>`;
+        cQyn = `<span class="c-badge cb-do">do + S + ${vBase}</span>`;
+        cQwh = `<span class="c-badge cb-wh-do">${whWord} do + S + ${vBase}</span>`;
+      }
+    }
+
+    tr.innerHTML = `
+      <td class="td-subj" onclick="selectSubject('${r.key}')">
+        <div class="subj-flex">
+          <div class="pro-avatar">${PRONOUN_SVGS[r.key]}</div>
+          <div class="pro-text-wrap">
+            <span class="pro-en">${r.label}</span>
+            <span class="pro-nat">${r.native}</span>
+          </div>
+        </div>
+      </td>
+      <td class="${selectedCat === 'pos' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'pos' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'pos')">${cPos}</td>
+      <td class="${selectedCat === 'neg' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'neg' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'neg')">${cNeg}</td>
+      <td class="${selectedCat === 'qyn' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qyn' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qyn')">${cQyn}</td>
+      <td class="${selectedCat === 'qwh' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qwh' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qwh')">${cQwh}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPastTable() {
+  const tbody = document.getElementById("tbody-past");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  ["pos", "neg", "qyn", "qwh"].forEach(col => {
+    const th = document.getElementById(`th-past-${col}`);
+    if (th) th.classList.toggle("col-hi", selectedCat === col);
+  });
+
+  let cPos = "", cNeg = "", cQyn = "", cQwh = "";
+  if (pastVerbMode === "raw") {
+    cPos = `<span class="c-badge cb-past-v2">V2 / Ved</span>`;
+    cNeg = `<span class="c-badge cb-past-didnt">didn't + V</span>`;
+    cQyn = `<span class="c-badge cb-past-did">did + S + V</span>`;
+    cQwh = `<span class="c-badge cb-past-wh-did">why did + S + V</span>`;
+  } else {
+    const pastV2Map = {
+      work: { v2: "worked", base: "work", wh: "why" },
+      live: { v2: "lived", base: "live", wh: "where" },
+      play: { v2: "played", base: "play", wh: "why" },
+      went: { v2: "went", base: "go", wh: "where" }
+    };
+    const info = pastV2Map[pastVerbMode] || { v2: pastVerbMode, base: pastVerbMode, wh: "why" };
+    cPos = `<span class="c-badge cb-past-v2">${info.v2}</span>`;
+    cNeg = `<span class="c-badge cb-past-didnt">didn't ${info.base}</span>`;
+    cQyn = `<span class="c-badge cb-past-did">did + S + ${info.base}</span>`;
+    cQwh = `<span class="c-badge cb-past-wh-did">${info.wh} did + S + ${info.base}</span>`;
+  }
+
+  SUBJECT_ROWS.forEach(r => {
+    const tr = document.createElement("tr");
+    const isRowActive = r.key === selectedPro;
+    tr.className = isRowActive ? "active-pro-row" : "";
+
+    tr.innerHTML = `
+      <td class="td-subj" onclick="selectSubject('${r.key}')">
+        <div class="subj-flex">
+          <div class="pro-avatar" style="color:var(--orange-bright); border-color:rgba(249,115,22,0.45); background:rgba(249,115,22,0.15);">${PRONOUN_SVGS[r.key]}</div>
+          <div class="pro-text-wrap">
+            <span class="pro-en" style="color:var(--orange-bright);">${r.label}</span>
+            <span class="pro-nat">${r.native}</span>
+          </div>
+        </div>
+      </td>
+      <td class="${selectedCat === 'pos' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'pos' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'pos')">${cPos}</td>
+      <td class="${selectedCat === 'neg' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'neg' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'neg')">${cNeg}</td>
+      <td class="${selectedCat === 'qyn' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qyn' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qyn')">${cQyn}</td>
+      <td class="${selectedCat === 'qwh' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qwh' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qwh')">${cQwh}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPresentContTable() {
+  const tbody = document.getElementById("tbody-pcont");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  ["pos", "neg", "qyn", "qwh"].forEach(col => {
+    const th = document.getElementById(`th-pcont-${col}`);
+    if (th) th.classList.toggle("col-hi", selectedCat === col);
+  });
+
+  const vPart = contVerbMode === "raw" ? "V-ing" : contVerbMode;
+
+  SUBJECT_ROWS.forEach(r => {
+    const tr = document.createElement("tr");
+    const isRowActive = r.key === selectedPro;
+    tr.className = (r.is3sg ? "row-3sg " : "") + (isRowActive ? "active-pro-row" : "");
+
+    const negAux = r.beAff === "am" ? "am not" : (r.beAff === "is" ? "isn't" : "aren't");
+
+    tr.innerHTML = `
+      <td class="td-subj" onclick="selectSubject('${r.key}')">
+        <div class="subj-flex">
+          <div class="pro-avatar">${PRONOUN_SVGS[r.key]}</div>
+          <div class="pro-text-wrap">
+            <span class="pro-en">${r.label}</span>
+            <span class="pro-nat">${r.native}</span>
+          </div>
+        </div>
+      </td>
+      <td class="${selectedCat === 'pos' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'pos' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'pos')">
+        <span class="c-badge cb-cont-pos">${r.beAff} ${vPart}</span>
+      </td>
+      <td class="${selectedCat === 'neg' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'neg' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'neg')">
+        <span class="c-badge cb-cont-neg">${negAux} ${vPart}</span>
+      </td>
+      <td class="${selectedCat === 'qyn' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qyn' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qyn')">
+        <span class="c-badge cb-cont-q">${r.beAff} + S + ${vPart}</span>
+      </td>
+      <td class="${selectedCat === 'qwh' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qwh' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qwh')">
+        <span class="c-badge cb-cont-wh">why ${r.beAff} + S + ${vPart}</span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderPastContTable() {
+  const tbody = document.getElementById("tbody-pastcont");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+
+  ["pos", "neg", "qyn", "qwh"].forEach(col => {
+    const th = document.getElementById(`th-pastcont-${col}`);
+    if (th) th.classList.toggle("col-hi", selectedCat === col);
+  });
+
+  const vPart = pastContVerbMode === "raw" ? "V-ing" : pastContVerbMode;
+
+  SUBJECT_ROWS.forEach(r => {
+    const tr = document.createElement("tr");
+    const isRowActive = r.key === selectedPro;
+    tr.className = (r.is1sgOr3sg ? "row-1sg-3sg " : "") + (isRowActive ? "active-pro-row" : "");
+
+    tr.innerHTML = `
+      <td class="td-subj" onclick="selectSubject('${r.key}')">
+        <div class="subj-flex">
+          <div class="pro-avatar" style="${r.is1sgOr3sg ? 'color:var(--indigo-bright); border-color:rgba(99,102,241,0.45); background:rgba(99,102,241,0.15);' : ''}">${PRONOUN_SVGS[r.key]}</div>
+          <div class="pro-text-wrap">
+            <span class="pro-en" style="${r.is1sgOr3sg ? 'color:var(--indigo-bright);' : ''}">${r.label}</span>
+            <span class="pro-nat">${r.native}</span>
+          </div>
+        </div>
+      </td>
+      <td class="${selectedCat === 'pos' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'pos' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'pos')">
+        <span class="c-badge cb-past-pos">${r.pastBe} ${vPart}</span>
+      </td>
+      <td class="${selectedCat === 'neg' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'neg' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'neg')">
+        <span class="c-badge cb-past-neg">${r.pastNeg} ${vPart}</span>
+      </td>
+      <td class="${selectedCat === 'qyn' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qyn' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qyn')">
+        <span class="c-badge cb-past-q">${r.pastBe} + S + ${vPart}</span>
+      </td>
+      <td class="${selectedCat === 'qwh' ? 'col-hi' : ''} ${isRowActive && selectedCat === 'qwh' ? 'cell-spotlight' : ''}" onclick="selectCell('${r.key}', 'qwh')">
+        <span class="c-badge cb-past-wh">why ${r.pastBe} + S + ${vPart}</span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateStructureTokens() {
+  const row = SUBJECT_ROWS.find(r => r.key === selectedPro) || SUBJECT_ROWS[2];
+
+  document.querySelectorAll(".formula-row").forEach(el => {
+    el.classList.toggle("active-cat", el.dataset.cat === selectedCat);
+  });
+
+  document.querySelectorAll("#hud-pro-strip .icon-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.pro === selectedPro);
+  });
+
+  // Action Verbs
+  document.querySelectorAll('[data-role="v-base"]').forEach(el => {
+    el.className = "sub-choice " + (!row.is3sg ? "sub-active" : "sub-dim");
+    el.onclick = (e) => { e.stopPropagation(); selectSubject("I"); selectCategory("pos"); };
+  });
+  document.querySelectorAll('[data-role="v-s"]').forEach(el => {
+    el.className = "sub-choice " + (row.is3sg ? "sub-active" : "sub-dim");
+    el.onclick = (e) => { e.stopPropagation(); selectSubject("he"); selectCategory("pos"); };
+  });
+  document.querySelectorAll('[data-role="aux-do"]').forEach(el => {
+    el.className = "sub-choice " + (!row.is3sg ? "sub-active" : "sub-dim");
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const parentRow = el.closest(".formula-row");
+      selectSubject("you (singular)");
+      if (parentRow) selectCategory(parentRow.dataset.cat);
+    };
+  });
+  document.querySelectorAll('[data-role="aux-does"]').forEach(el => {
+    el.className = "sub-choice " + (row.is3sg ? "sub-active" : "sub-dim");
+    el.onclick = (e) => {
+      e.stopPropagation();
+      const parentRow = el.closest(".formula-row");
+      selectSubject("he");
+      if (parentRow) selectCategory(parentRow.dataset.cat);
+    };
+  });
+
+  // To Be & Present Continuous
+  ['be', 'pcont'].forEach(prefix => {
+    document.querySelectorAll(`[data-role="${prefix}-am"]`).forEach(el => {
+      el.className = "sub-choice " + (row.beAff === "am" ? "sub-active" : "sub-dim");
+      el.onclick = (e) => { e.stopPropagation(); selectSubject("I"); };
+    });
+    document.querySelectorAll(`[data-role="${prefix}-is"]`).forEach(el => {
+      el.className = "sub-choice " + (row.beAff === "is" ? "sub-active" : "sub-dim");
+      el.onclick = (e) => { e.stopPropagation(); selectSubject("he"); };
+    });
+    document.querySelectorAll(`[data-role="${prefix}-are"]`).forEach(el => {
+      el.className = "sub-choice " + (row.beAff === "are" ? "sub-active" : "sub-dim");
+      el.onclick = (e) => { e.stopPropagation(); selectSubject("they"); };
+    });
+  });
+
+  // Past Continuous (was vs were)
+  document.querySelectorAll('[data-role="pastcont-was"]').forEach(el => {
+    el.className = "sub-choice " + (row.is1sgOr3sg ? "sub-active" : "sub-dim");
+    el.onclick = (e) => { e.stopPropagation(); selectSubject("he"); };
+  });
+  document.querySelectorAll('[data-role="pastcont-were"]').forEach(el => {
+    el.className = "sub-choice " + (!row.is1sgOr3sg ? "sub-active" : "sub-dim");
+    el.onclick = (e) => { e.stopPropagation(); selectSubject("they"); };
+  });
+
+  // Past Simple
+  document.querySelectorAll('[data-role="past-v2"]').forEach(el => {
+    el.className = "sub-choice sub-active";
+    el.onclick = (e) => { e.stopPropagation(); selectCategory("pos"); };
+  });
+}
+
+function updateLivePreviews() {
+  const row = SUBJECT_ROWS.find(r => r.key === selectedPro) || SUBJECT_ROWS[2];
+
+  const pAct = document.getElementById("preview-action");
+  const pPast = document.getElementById("preview-past");
+  const pBe = document.getElementById("preview-tobe");
+  const pCont = document.getElementById("preview-pcont");
+  const pPastCont = document.getElementById("preview-pastcont");
+
+  const vBase = actionVerbMode === "raw" ? "V" : actionVerbMode;
+  const vS = actionVerbMode === "raw" ? "Vs" : actionVerbMode + "s";
+  const auxDo = row.is3sg ? "does" : "do";
+  const cvBase = contVerbMode === "raw" ? "V-ing" : contVerbMode;
+  const pcvBase = pastContVerbMode === "raw" ? "V-ing" : pastContVerbMode;
+
+  if (pBe) {
+    const vMid = showBeVerbToken ? `<span class="eq-plus">+</span><span class="preview-chip tok-v">V</span>` : "";
+    if (selectedCat === "pos") {
+      pBe.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "neg") {
+      pBe.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-not">not</span>${vMid}<span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "qyn") {
+      pBe.innerHTML = `<span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span>${vMid}<span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    } else {
+      pBe.innerHTML = `<span class="preview-chip tok-wh">why</span><span class="eq-plus">+</span><span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span>${vMid}<span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    }
+  }
+
+  if (pAct) {
+    if (selectedCat === "pos") {
+      pAct.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip ${row.is3sg ? 'cb-vs' : 'tok-v'}">${row.is3sg ? vS : vBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "neg") {
+      pAct.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-aux">${auxDo}</span><span class="eq-plus">+</span><span class="preview-chip tok-not">not</span><span class="eq-plus">+</span><span class="preview-chip tok-v">${vBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "qyn") {
+      pAct.innerHTML = `<span class="preview-chip tok-aux">${auxDo}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-v">${vBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    } else {
+      pAct.innerHTML = `<span class="preview-chip tok-wh">why</span><span class="eq-plus">+</span><span class="preview-chip tok-aux">${auxDo}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-v">${vBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    }
+  }
+
+  if (pPast) {
+    let v2Text = "V2 / Ved";
+    let vBaseText = "V";
+    let whWord = "why";
+    if (pastVerbMode === "work") { v2Text = "worked"; vBaseText = "work"; whWord = "why"; }
+    else if (pastVerbMode === "live") { v2Text = "lived"; vBaseText = "live"; whWord = "where"; }
+    else if (pastVerbMode === "play") { v2Text = "played"; vBaseText = "play"; whWord = "why"; }
+    else if (pastVerbMode === "went") { v2Text = "went"; vBaseText = "go"; whWord = "where"; }
+
+    if (selectedCat === "pos") {
+      pPast.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip cb-past-v2">${v2Text}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "neg") {
+      pPast.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-did">didn't</span><span class="eq-plus">+</span><span class="preview-chip tok-v">${vBaseText}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "qyn") {
+      pPast.innerHTML = `<span class="preview-chip tok-did">did</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-v">${vBaseText}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    } else {
+      pPast.innerHTML = `<span class="preview-chip tok-wh">${whWord}</span><span class="eq-plus">+</span><span class="preview-chip tok-did">did</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-v">${vBaseText}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    }
+  }
+
+  if (pCont) {
+    if (selectedCat === "pos") {
+      pCont.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${cvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "neg") {
+      pCont.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-not">not</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${cvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "qyn") {
+      pCont.innerHTML = `<span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${cvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    } else {
+      pCont.innerHTML = `<span class="preview-chip tok-wh">why</span><span class="eq-plus">+</span><span class="preview-chip tok-be">${row.beAff}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${cvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    }
+  }
+
+  if (pPastCont) {
+    if (selectedCat === "pos") {
+      pPastCont.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-waswere">${row.pastBe}</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${pcvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "neg") {
+      pPastCont.innerHTML = `<span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-waswere">${row.pastBe}</span><span class="eq-plus">+</span><span class="preview-chip tok-not">not</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${pcvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O</span>`;
+    } else if (selectedCat === "qyn") {
+      pPastCont.innerHTML = `<span class="preview-chip tok-waswere">${row.pastBe}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${pcvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    } else {
+      pPastCont.innerHTML = `<span class="preview-chip tok-wh">why</span><span class="eq-plus">+</span><span class="preview-chip tok-waswere">${row.pastBe}</span><span class="eq-plus">+</span><span class="preview-chip tok-s">${row.label}</span><span class="eq-plus">+</span><span class="preview-chip tok-ving">${pcvBase}</span><span class="eq-plus">+</span><span class="preview-chip tok-o">O ?</span>`;
+    }
+  }
+}
+
+/* ============================================================================
+   INTERACTION HANDLERS
+   ============================================================================ */
+function selectSubject(proKey) {
+  selectedPro = proKey;
+  renderAll();
+}
+
+function selectCategory(catKey) {
+  selectedCat = catKey;
+  renderAll();
+}
+
+function selectCell(proKey, catKey) {
+  selectedPro = proKey;
+  selectedCat = catKey;
+  renderAll();
+}
+
+function setActionVerbMode(mode) {
+  actionVerbMode = mode;
+  document.querySelectorAll("[data-vmode]").forEach(btn => {
+    btn.classList.toggle("active-amber", btn.dataset.vmode === mode);
+  });
+  renderAll();
+}
+
+function setContVerbMode(mode) {
+  contVerbMode = mode;
+  document.querySelectorAll("[data-cvmode]").forEach(btn => {
+    btn.classList.toggle("active-teal", btn.dataset.cvmode === mode);
+  });
+  renderAll();
+}
+
+function setPastContVerbMode(mode) {
+  pastContVerbMode = mode;
+  document.querySelectorAll("[data-pastcvmode]").forEach(btn => {
+    btn.classList.toggle("active-indigo", btn.dataset.pastcvmode === mode);
+  });
+  renderAll();
+}
+
+function setBeDisplayMode(mode) {
+  beDisplayMode = mode;
+  document.querySelectorAll("[data-bemode]").forEach(btn => {
+    btn.classList.toggle("active-cyan", btn.dataset.bemode === mode);
+  });
+  renderAll();
+}
+
+function toggleBeVerbToken(e) {
+  if (e) e.stopPropagation();
+  showBeVerbToken = !showBeVerbToken;
+  const btn = document.getElementById("btn-toggle-bev");
+  if (btn) btn.classList.toggle("active", showBeVerbToken);
+  document.querySelectorAll(".be-v-tok").forEach(el => {
+    el.style.display = showBeVerbToken ? "inline-flex" : "none";
+  });
+  updateLivePreviews();
+  updateWires();
+}
+
+function toggleNativeSubtitles() {
+  document.body.classList.toggle("hide-native");
+  const btn = document.getElementById("btn-toggle-native");
+  if (btn) btn.classList.toggle("active", !document.body.classList.contains("hide-native"));
+  updateWires();
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("light-mode");
+}
+
+/* ============================================================================
+   SVG WIRE GEOMETRY ENGINE (EXACTLY 2 COLUMNS: LEFT & RIGHT)
+   ============================================================================ */
+function getWorldRect(el) {
+  if (!el || el.style.display === "none") return { left: 0, right: 0, top: 0, bottom: 0, cx: 0, cy: 0 };
+  const world = document.getElementById("canvas-world");
+  const wRect = world.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const left = (r.left - wRect.left) / scale;
+  const top = (r.top - wRect.top) / scale;
+  const width = r.width / scale;
+  const height = r.height / scale;
+  return {
+    left,
+    right: left + width,
+    top,
+    bottom: top + height,
+    cx: left + width / 2,
+    cy: top + height / 2
+  };
+}
+
+function drawCurve(pathId, x1, y1, x2, y2, isActive) {
+  const path = document.getElementById(pathId);
+  if (!path) return;
+  if (!x1 && !y1 && !x2 && !y2) {
+    path.setAttribute("d", "");
+    return;
+  }
+  const dy = Math.abs(y2 - y1) * 0.45;
+  path.setAttribute("d", `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`);
+  path.classList.toggle("wire-active", !!isActive);
+}
+
+function updateWires() {
+  const cats = ["pos", "neg", "qyn", "qwh"];
+
+  if (viewMode === "single") {
+    // 1. Single Tense Wires (Structure formula row down to Table header)
+    const isTableVis = !!tableVisibility[singleTenseKey];
+    cats.forEach(cat => {
+      if (isTableVis) {
+        const fEl = getWorldRect(document.getElementById(`frow-${singleTenseKey}-${cat}`));
+        const thEl = getWorldRect(document.getElementById(`th-${singleTenseKey}-${cat}`));
+        drawCurve(`wire-left-${cat}`, fEl.cx, fEl.bottom, thEl.cx, thEl.top, selectedCat === cat);
+      } else {
+        const pL = document.getElementById(`wire-left-${cat}`);
+        if (pL) pL.setAttribute("d", "");
+      }
+
+      // Clear right wire
+      const pR = document.getElementById(`wire-right-${cat}`);
+      if (pR) pR.setAttribute("d", "");
+    });
+
+    // Clear center bridge wire
+    const pathBridge = document.getElementById("wire-center-bridge");
+    if (pathBridge) pathBridge.setAttribute("d", "");
+    return;
+  }
+
+  // Dual mode:
+  // 1. Left Column Wires
+  const isLeftVis = !!tableVisibility[leftTenseKey];
+  cats.forEach(cat => {
+    if (isLeftVis) {
+      const fLeft = getWorldRect(document.getElementById(`frow-${leftTenseKey}-${cat}`));
+      const thLeft = getWorldRect(document.getElementById(`th-${leftTenseKey}-${cat}`));
+      drawCurve(`wire-left-${cat}`, fLeft.cx, fLeft.bottom, thLeft.cx, thLeft.top, selectedCat === cat);
+    } else {
+      const pL = document.getElementById(`wire-left-${cat}`);
+      if (pL) pL.setAttribute("d", "");
+    }
+  });
+
+  // 2. Right Column Wires
+  const isRightVis = !!tableVisibility[rightTenseKey];
+  cats.forEach(cat => {
+    if (isRightVis) {
+      const fRight = getWorldRect(document.getElementById(`frow-${rightTenseKey}-${cat}`));
+      const thRight = getWorldRect(document.getElementById(`th-${rightTenseKey}-${cat}`));
+      drawCurve(`wire-right-${cat}`, fRight.cx, fRight.bottom, thRight.cx, thRight.top, selectedCat === cat);
+    } else {
+      const pR = document.getElementById(`wire-right-${cat}`);
+      if (pR) pR.setAttribute("d", "");
+    }
+  });
+
+  // 3. Center Bridge Wire across the gap
+  const sL = getWorldRect(document.getElementById(`node-struct-${leftTenseKey}`));
+  const sR = getWorldRect(document.getElementById(`node-struct-${rightTenseKey}`));
+  const pathBridge = document.getElementById("wire-center-bridge");
+  if (pathBridge && sL.right && sR.left) {
+    const dx = Math.abs(sR.left - sL.right) * 0.48;
+    pathBridge.setAttribute("d", `M ${sL.right} ${sL.cy} C ${sL.right + dx} ${sL.cy}, ${sR.left - dx} ${sR.cy}, ${sR.left} ${sR.cy}`);
+  } else if (pathBridge) {
+    pathBridge.setAttribute("d", "");
+  }
+}
+
+/* ============================================================================
+   CANVAS PAN, ZOOM & AUTOFIT ENGINE
+   ============================================================================ */
+const viewport = document.getElementById("canvas-viewport");
+const world = document.getElementById("canvas-world");
+const zoomLabel = document.getElementById("zoom-label");
+
+let scale = 1.0;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+
+function applyTransform() {
+  world.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  zoomLabel.textContent = `${Math.round(scale * 100)}%`;
+  updateWires();
+}
+
+function zoomIn() {
+  scale = Math.min(1.8, +(scale + 0.08).toFixed(2));
+  applyTransform();
+}
+
+function zoomOut() {
+  scale = Math.max(0.25, +(scale - 0.08).toFixed(2));
+  applyTransform();
+}
+
+function fitCanvasToScreen() {
+  const visibleNodes = Array.from(document.querySelectorAll(".canvas-node"))
+    .filter(el => el.style.display !== "none");
+
+  if (!visibleNodes.length) return;
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  visibleNodes.forEach(el => {
+    const l = parseFloat(el.style.left) || 0;
+    const t = parseFloat(el.style.top) || 0;
+    const r = l + el.offsetWidth;
+    const b = t + el.offsetHeight;
+    if (l < minX) minX = l;
+    if (t < minY) minY = t;
+    if (r > maxX) maxX = r;
+    if (b > maxY) maxY = b;
+  });
+
+  const totalWidth = maxX - minX + 60;
+  const totalHeight = maxY - minY + 70;
+
+  const padX = 24;
+  const padTop = 64;
+  const padBottom = 20;
+  const availW = window.innerWidth - padX * 2;
+  const availH = window.innerHeight - padTop - padBottom;
+
+  scale = Math.min(1.15, Math.max(0.25, Math.min(availW / totalWidth, availH / totalHeight)));
+  panX = Math.round(padX + (availW - totalWidth * scale) / 2 - minX * scale + 30 * scale);
+  panY = Math.round(padTop + (availH - totalHeight * scale) / 2 - minY * scale + 20 * scale);
+
+  applyTransform();
+}
+
+function resetNodePositions() {
+  autoSpaceNodes();
+  fitCanvasToScreen();
+}
+
+// Mouse Pan on Viewport Background
+viewport.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  if (e.target.closest(".canvas-node") || e.target.closest(".hud-bar")) return;
+  isPanning = true;
+  viewport.classList.add("panning");
+  panStartX = e.clientX - panX;
+  panStartY = e.clientY - panY;
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (isPanning) {
+    panX = e.clientX - panStartX;
+    panY = e.clientY - panStartY;
+    applyTransform();
+  }
+});
+
+window.addEventListener("mouseup", () => {
+  isPanning = false;
+  viewport.classList.remove("panning");
+});
+
+// Wheel Zoom towards Cursor
+viewport.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+  const nextScale = Math.min(1.85, Math.max(0.22, scale * zoomFactor));
+  const mouseX = e.clientX;
+  const mouseY = e.clientY;
+  panX = mouseX - (mouseX - panX) * (nextScale / scale);
+  panY = mouseY - (mouseY - panY) * (nextScale / scale);
+  scale = nextScale;
+  applyTransform();
+}, { passive: false });
+
+// Node Dragging
+let dragNode = null;
+let nodeInitLeft = 0, nodeInitTop = 0, dragStartX = 0, dragStartY = 0;
+
+document.querySelectorAll(".canvas-node").forEach(node => {
+  node.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest("button") || e.target.closest(".formula-row") || e.target.closest("td") || e.target.closest("th") || e.target.closest("select")) return;
+    dragNode = node;
+    node.classList.add("dragging");
+    nodeInitLeft = parseFloat(node.style.left) || 0;
+    nodeInitTop = parseFloat(node.style.top) || 0;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    e.stopPropagation();
+  });
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!dragNode) return;
+  const dx = (e.clientX - dragStartX) / scale;
+  const dy = (e.clientY - dragStartY) / scale;
+  dragNode.style.left = `${nodeInitLeft + dx}px`;
+  dragNode.style.top = `${nodeInitTop + dy}px`;
+  updateWires();
+});
+
+window.addEventListener("mouseup", () => {
+  if (dragNode) {
+    dragNode.classList.remove("dragging");
+    dragNode = null;
+    updateWires();
+  }
+});
+
+/* ============================================================================
+   HUD PANEL DRAGGABLE & COLLAPSIBLE / TOGGLABLE ENGINE
+   ============================================================================ */
+let isDraggingHud = false;
+let hudDragStartX = 0, hudDragStartY = 0;
+let hudInitLeft = 0, hudInitTop = 0;
+let hudHasDragged = false;
+let isHudCollapsed = false;
+const hudBar = document.getElementById("hud-bar");
+
+function initHudDraggable() {
+  const dragHandle = document.getElementById("hud-drag-handle");
+  const miniPill = document.getElementById("hud-mini-pill");
+  const headerBar = document.getElementById("hud-header-bar");
+
+  function startDrag(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest("button") || e.target.closest("select")) return;
+
+    isDraggingHud = true;
+    hudHasDragged = false;
+    hudBar.classList.add("dragging");
+
+    const rect = hudBar.getBoundingClientRect();
+    hudBar.style.transform = "none";
+    hudBar.style.left = `${rect.left}px`;
+    hudBar.style.top = `${rect.top}px`;
+
+    hudInitLeft = rect.left;
+    hudInitTop = rect.top;
+    hudDragStartX = e.clientX;
+    hudDragStartY = e.clientY;
+
+    if (e.target.setPointerCapture && e.pointerId !== undefined) {
+      try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    e.stopPropagation();
+  }
+
+  function doDrag(e) {
+    if (!isDraggingHud) return;
+    const dx = e.clientX - hudDragStartX;
+    const dy = e.clientY - hudDragStartY;
+    if (Math.hypot(dx, dy) > 4) {
+      hudHasDragged = true;
+    }
+
+    let nextLeft = hudInitLeft + dx;
+    let nextTop = hudInitTop + dy;
+
+    // Viewport boundaries clamping
+    const pad = 6;
+    const maxLeft = window.innerWidth - hudBar.offsetWidth - pad;
+    const maxTop = window.innerHeight - hudBar.offsetHeight - pad;
+    nextLeft = Math.max(pad, Math.min(maxLeft, nextLeft));
+    nextTop = Math.max(pad, Math.min(maxTop, nextTop));
+
+    hudBar.style.left = `${nextLeft}px`;
+    hudBar.style.top = `${nextTop}px`;
+  }
+
+  function endDrag(e) {
+    if (!isDraggingHud) return;
+    isDraggingHud = false;
+    hudBar.classList.remove("dragging");
+    if (e.target.releasePointerCapture && e.pointerId !== undefined) {
+      try { e.target.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+  }
+
+  // Pointer listeners on drag handle, header bar, and mini pill
+  [dragHandle, headerBar, miniPill].forEach(el => {
+    if (!el) return;
+    el.addEventListener("pointerdown", startDrag);
+    el.addEventListener("pointermove", doDrag);
+    el.addEventListener("pointerup", endDrag);
+    el.addEventListener("pointercancel", endDrag);
+  });
+
+  // Clicking mini-pill toggles expansion (only if it wasn't a drag gesture)
+  if (miniPill) {
+    miniPill.addEventListener("click", (e) => {
+      if (hudHasDragged) {
+        hudHasDragged = false;
+        return;
+      }
+      toggleHudPanel();
+    });
+  }
+
+  // Double click drag handle to reset position to top-center
+  if (dragHandle) {
+    dragHandle.addEventListener("dblclick", resetHudPosition);
+  }
+}
+
+function resetHudPosition() {
+  hudBar.style.transform = "translateX(-50%)";
+  hudBar.style.left = "50%";
+  hudBar.style.top = "10px";
+}
+
+function toggleHudPanel() {
+  isHudCollapsed = !isHudCollapsed;
+  hudBar.classList.toggle("collapsed", isHudCollapsed);
+  const toggleBtn = document.getElementById("btn-hud-toggle");
+  if (toggleBtn) {
+    toggleBtn.title = isHudCollapsed ? "Expand Panel (H)" : "Collapse Panel (H)";
+    toggleBtn.innerHTML = isHudCollapsed
+      ? `<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg><span class="hud-kbd-hint">H</span>`
+      : `<svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg><span class="hud-kbd-hint">H</span>`;
+  }
+  updateMiniPillBadge();
+}
+
+// Global hotkey: H toggles HUD visibility
+window.addEventListener("keydown", (e) => {
+  if (e.key === "h" || e.key === "H") {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+    e.preventDefault();
+    toggleHudPanel();
+  }
+});
+
+// Initialize
+window.addEventListener("DOMContentLoaded", () => {
+  initHudDraggable();
+  updateMiniPillBadge();
+  autoSpaceNodes();
+  fitCanvasToScreen();
+});
+window.addEventListener("resize", fitCanvasToScreen);
+</script>
+</body>
+</html>
